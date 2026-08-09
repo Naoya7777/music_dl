@@ -1,0 +1,15 @@
+# Local environment
+.venv/
+
+# Python-generated files
+__pycache__/
+*.py[cod]
+
+# Tool caches and test artifacts
+.pytest_cache/
+.pytest-tmp/
+.ruff_cache/
+
+# User-specific application state
+settings.json
+settings.json.tmp
