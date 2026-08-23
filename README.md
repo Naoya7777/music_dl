@@ -34,4 +34,4 @@ powershell -ExecutionPolicy Bypass -File .\run.ps1
 
 初回または必要なファイルがない場合だけ環境を準備します。既に準備済みの場合は、その環境を再利用してアプリを起動します。
 
-詳しい導入方法とトラブル対応は [使い方ガイド](docs/Usage.md)、仕様は[プロジェクト概要](docs/ProjectContext.md) を参照してください。
+詳しい導入方法とトラブル対応は [使い方ガイド](.docs/Usage.md)、仕様は[プロジェクト概要](.docs/ProjectContext.md) を参照してください。
