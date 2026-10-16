@@ -2,9 +2,9 @@
 
 | 管理項目 | 内容 |
 | --- | --- |
-| 最終更新日 | 2026-09-07 |
+| 最終更新日 | 2026-10-16 |
 | 対象ブランチ | `main` |
-| 状態 | 主要機能実装済み・原則として現状維持 |
+| 状態 | 保存先ディレクトリ検証改善を反映・全品質Gate PASS。主要機能実装済み・原則として現状維持 |
 
 ## 1. 現在地点
 
@@ -64,3 +64,15 @@
 - 添付の共通3文書は編集開始時のローカル文書と同一でした。添付の入口は別プロジェクト用の参照資料として扱い、Music DLの固有設定・品質ゲート・禁止事項を保持しました。アプリ、依存関係、データ、CI、既存 `.docs/` は変更対象外です。
 - 文書検証1巡で、6文書の実差分、12件の相対リンクと見出し参照、UTF-8・空白、第1〜14章の一意性、旧委任規定の除去を確認しました。共通規約の第1〜12章とMusic DL固有の第2〜6節は開始時と一致し、HEAD・index・変更対象も維持しています。git diff --checkは成功しました（既存のLF→CRLF警告あり）。検証失敗による追加修正は0巡です。アプリ全体のテストや外部操作は文書変更に不要なため実行していません。
 - 厳密なトークン上限・メモリ解放・起動数制限の強制制御、消費計測、自動読込の新規起動確認は未実施です。モデル設定は変更せず、消費量や削減率は不明として扱います。
+
+## 6. 2026-10-16 保存先ディレクトリ検証改善の反映
+
+- ユーザーの明示指示により、DevNexusで実Review APPROVEDとなった既存patchを元Music DLへ反映しました。空文字・空白のみの入力をPath解釈前に拒否し、空白を含む有効なパス、expanduser・resolve・存在・種別・書き込み権限検査を維持しています。
+- 開始時は `main`、HEAD `bc6268008b48330366f9918ecfc7998089bce8ec`、worktree・indexともcleanでした。コード変更は `src/core/validation.py` と `tests/test_validation.py` のみで、本書は運用記録です。
+- 承認正本はDevNexus commit `9353c935b396e6ff5b03bdbb8e6d349fb5f475c2` の[保存済みDecision](../../DevNexus/.docs/evidence/music-directory-recovery-20261016/validated/decision.json)と[回復証拠](../../DevNexus/.docs/evidence/music-directory-recovery-20261016/README.md)です。Work `music-directory-review-transport-recovery-fe1c2a3d68fb481dbe504af0dead5168`、Decision `APPROVED`、required_changes・risksはいずれも空です。
+- patch SHA-256 `1248ec36258e1d34fc94d006e10b57ddafd4d76a0f629b8fafca0631223e7cb3` を照合し、元HEAD・適用後の実差分が承認対象と完全一致しました。証拠manifestの全103ファイルをGit・ディスク双方から照合し、旧Workの保存archiveと実Reviewer応答の全Decision field一致も確認しました。既存Work・失敗Run・実Reviewの再dispatchは0件、実装修正は0件です。
+- 元Projectの既存 `.venv` を再利用しました。Python 3.14.2、yt-dlp 2026.3.17、customtkinter 5.2.2、pytest 9.0.2、Ruff 0.15.7、Black 24.10.0、Pyright 1.1.408で、依存の追加・更新はありません。
+- 元Project上の固定Gateは独立保存先検査11項目PASS、pytest全32件PASS（0.15秒）、Ruff PASS、Black PASS（11ファイル変更不要）、Pyright PASS（0 errors / 0 warnings）、protected・scope・git diff --check PASSです。pytestの出力先だけ新規TEMPへ変更し、既存Gateの引数・required・timeoutを維持しました。Pyrightは既存 `.venv` の探索先を明示しました。Pyrightの更新案内は残りますが更新は行っていません。
+- 今回の実行ログは `C:/Users/cogit/AppData/Local/Temp/MusicDL-source-promotion-8v9nfnmf/` の `preflight.json`、`gates.json`、`result.json` に保存しました。`gates.json` SHA-256は `962bef02cf055c03e34f01005f77867f8b98540a9f27521c2237cfef3b54f6c2` です。TEMPログは恒久保管を保証しません。検証結果と承認識別子は本節を含むlocal commitへ記録します。
+- DevNexusのHEAD・worktreeと既存証拠を保全し、Music DLの対象外追跡ファイル・利用者設定が不変であることを確認しました。Protected Asset・Security Policy変更、push・deploy、外部サービス接続、実FFmpeg・GUI・MP3再生検証は行っていません。既存のURL厳密性・GUI・実サービス等の制約は第3節に残ります。今回の修正に追加の未解決事項はありません。
+- 要求・設計・利用文書の保存先検証契約との整合を確認しました。今回の反映は既存要求の境界不具合修正です。次の作業は原則現状維持で、追加開発は別の明示依頼を待ちます。

@@ -50,6 +50,9 @@ def validate_youtube_url(value: str) -> str:
 def validate_output_directory(value: str) -> Path:
     """Validate that an output directory exists and is writable."""
 
+    if not value.strip():
+        raise InputValidationError("保存先フォルダを入力してください。")
+
     directory = Path(value).expanduser()
     if not directory.exists():
         raise InputValidationError("保存先フォルダが存在しません。")
