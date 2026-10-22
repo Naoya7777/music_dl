@@ -3,10 +3,15 @@
 | 管理項目 | 内容 |
 | --- | --- |
 | ファイル名 | `ProjectContext.md` |
-| 文書版数 | 2.0.1 |
-| 最終更新日 | 2026-08-24 |
+| 文書版数 | 2.1.0 |
+| 最終更新日 | 2026-10-23 |
 | 管理責任者 | 未定（プロジェクト責任者の決定後に更新） |
+| 確認基準HEAD | `b816b2f7ddd06b30a9006ff0de1ceec73765a962` |
+| 対象システム版 | リリース版数未定義（基準HEADの実装） |
+| 検証区分 | 今回は静的照合のみ。本文の過去テスト成功は日付付き履歴であり今回の再実行ではない |
 | 文書区分 | 要求・対象範囲の基準文書 |
+
+対象読者: 利用者・開発者・運用担当者。対象範囲: 本文に定める要求/内部設計/運用。基本6文書の役割と読順は[索引](README.md)を参照。
 
 ## 1. 目的、対象範囲、結論
 
@@ -110,18 +115,7 @@ Music DL の画面
 
 本書で定義する名称を全体の正式名称とします。コード上の識別子は、必要な場合に併記します。
 
-| 正式名称 | 別名・識別子 | 定義 |
-| --- | --- | --- |
-| Music DL | 本アプリケーション | YouTube の単一動画から音声を取得して MP3 に変換する Windows デスクトップアプリケーション |
-| 単一動画 URL | URL | プレイリストを示す `list` パラメーターを含まず、1 本の YouTube 動画を特定する HTTP または HTTPS のアドレス |
-| 保存先フォルダ | `save_dir` | MP3 を保存する、存在して書き込み可能なフォルダ |
-| 音声ビットレート | `bitrate`、画面上の音質 | 1 秒当たりの音声データ量。単位は kbps（キロビット毎秒）で、許可値は 128、192、320 |
-| FFmpeg | `ffmpeg` | 取得した音声を MP3 に変換する外部プログラム |
-| `yt-dlp` | 取得ライブラリ | YouTube からメディア情報と音声を取得し、FFmpeg の後処理を呼び出す外部ライブラリ |
-| PATH | 環境変数 PATH | Windows が実行プログラムを探すフォルダの一覧 |
-| 仮想環境 | `.venv` | このプロジェクトの Python とパッケージを分離する実行環境 |
-| DRM | デジタル著作権管理 | コンテンツの利用や複製を技術的に制御する仕組み |
-| GUI | 画面 | Graphical User Interface（グラフィカルユーザーインターフェース）。ボタンや入力欄で操作する画面 |
+正式名称・別名・定義は[用語・定義集](Glossary.md)へ集約する。
 
 永続データは `settings.json` の保存先フォルダと音声ビットレートだけです。利用者情報、認証情報、Cookie、履歴、ログは永続化しません。スキーマは[アーキテクチャ](Architecture.md)を基準とします。
 
@@ -132,7 +126,7 @@ Music DL の画面
 | FR-01 | 単一動画 URL を入力できる | 手入力と貼り付けの両方を利用できる | 実装済み・単体確認済み |
 | FR-02 | 音声を取得し、MP3 に変換できる | 有効な対象 URL から再生可能な MP3 を生成できる | 実装済み・外部サービスを使う自動確認は未実施 |
 | FR-03 | 音声ビットレートを選択できる | 128、192、320 kbps のいずれかを FFmpeg の変換設定へ渡す | 実装済み・単体確認済み |
-| FR-04 | 保存先フォルダを選択できる | 存在し、書き込み可能なフォルダを指定できる | 実装済み・境界の単体確認は一部のみ |
+| FR-04 | 保存先フォルダを選択できる | 存在し、書き込み可能なフォルダを指定できる | 実装済み。2026-10-16保存先境界修正の過去Evidenceあり、今回は静的確認のみ |
 | FR-05 | 設定を保存し復元できる | 保存先と音声ビットレートを次回起動時に読み込む | 実装済み・単体確認済み |
 | FR-06 | 処理状況を確認できる | 進捗、変換中、完了、失敗を画面で区別できる | 実装済み・GUI 自動確認は未実施 |
 | FR-07 | 重複実行を防止する | 実行中は二件目を開始しない | 実装済み・サービス層を単体確認済み |
@@ -150,7 +144,7 @@ Music DL の画面
 | NFR-02 | 応答性 | 取得・変換を別スレッドで実行し、画面イベントを長時間止めない | 実装済み・GUI 自動確認は未実施 |
 | NFR-03 | 安全性 | URL、保存先、FFmpeg を境界で検証し、認証情報を設定やログへ保存しない | 一部実装済み。URL 厳密性に差異あり |
 | NFR-04 | データ整合性 | 設定値を検証し、一時ファイルからの置換で保存途中の破損を抑える | 実装済み・単体確認済み |
-| NFR-05 | 通信信頼性 | 通信タイムアウトを 30 秒、通常取得と分割データ取得の再試行回数を各 3 回とする | 実装済み・設定値を単体確認済み |
+| NFR-05 | 通信信頼性 | 通信タイムアウトを 30 秒、通常取得と分割データ取得の再試行回数を各 3 回とする | 実装あり。socket_timeout=30は対応単体テストの検査対象、retries=3・fragment_retries=3はコード静的確認のみ。今回はテスト未実行 |
 | NFR-06 | 保守性 | 画面、取得・変換、設定、入力検証の責務を分離する | 実装済み・静的検査済み |
 | NFR-07 | プライバシー | 独自の利用分析情報を送信しない。エラー表示中の URL を `[URL]` に置換する | 実装済み・URL 置換を単体確認済み |
 | NFR-08 | 運用性 | 画面内ログで環境確認、設定変更、開始、完了、失敗を識別できる | 実装済み・永続監視は対象外 |
@@ -191,26 +185,35 @@ Music DL の画面
 
 ## 9. トレーサビリティと関連文書
 
-| 要求 | 主な設計・実装 | 主なテスト・確認 |
-| --- | --- | --- |
-| FR-01、FR-08、NFR-03 | `src/ui/app_window.py`、`src/core/validation.py` | `tests/test_validation.py` |
-| FR-02、FR-03、FR-06、FR-07 | `src/core/download_service.py`、`src/ui/app_window.py` | `tests/test_download_service.py`、リリース前手動確認 |
-| FR-04 | `src/ui/app_window.py`、`src/core/validation.py` | `tests/test_validation.py`、リリース前手動確認 |
-| FR-05、NFR-04 | `src/core/config.py`、`settings.json` | `tests/test_config.py` |
-| FR-09、FR-10、NFR-01 | `run.ps1`、`DownloadService.validate_environment()`、`requirements.txt`、`pyproject.toml` | `tests/test_download_service.py`、開発時検査、リリース前手動確認 |
-| NFR-02、NFR-08 | `src/ui/app_window.py`、`src/core/download_service.py` | サービス層単体テスト、リリース前手動確認 |
-| NFR-05、NFR-07 | `src/core/download_service.py` | `tests/test_download_service.py` |
-| NFR-09、NFR-10 | 未決定（対応する設計・実装なし） | 受入基準の決定後に試験方法を定義 |
+既存ID・要件・受入条件は第6〜7章を維持する。下表の「実装あり」はコードの存在、「静的」は今回の検証。外部実行・GUI受入は未実施。既存の過去検証は第8章およびProjectStatus/履歴の日付付き記録を参照し、今回の成功としない。決定状況は既存要件として確定、明示した未決定事項は例外とする。
 
-推奨閲覧順は次のとおりです。
+| ID | 設計・UI | 実装・識別子 | テスト/受入 | 実装・検証 |
+| --- | --- | --- | --- | --- |
+| FR-01 | UI-001入力 | `src/ui/app_window.py: ModernUI._paste_clipboard, _start_download`; `src/core/validation.py: validate_youtube_url` | `tests/test_validation.py: test_accepts_supported_video_urls` + 手動貼付 | 実装あり・静的、GUI未確認 |
+| FR-02 | Architecture§5、外部§2 | `src/core/download_service.py: DownloadService._download_worker` | `tests/test_download_service.py: test_successful_download_builds_expected_options`; Usage§9.2実MP3 | 実装あり・静的、実取得/再生未確認 |
+| FR-03 | UI-001音質 | `AppConfig.with_bitrate`, `DownloadService._build_options` | `test_rejects_unsupported_bitrate`, `test_successful_download_builds_expected_options` | 実装あり・静的 |
+| FR-04 | UI-002保存先 | `ModernUI._change_directory`; `validate_output_directory` | `test_rejects_blank_output_directory`, `test_preserves_whitespace_in_output_directory`, file/missing検査 | 実装あり・静的、書込可能性の実操作は未確認 |
+| FR-05 | Architecture§6.1 | `src/core/config.py: ConfigManager.load/save` | `tests/test_config.py: test_round_trip_settings, test_save_failure_is_reported` | 実装あり・静的 |
+| FR-06 | UI-001/003、Architecture§5 | `ModernUI._on_progress, _on_finish, _drain_ui_queue` | `test_progress_hook_uses_byte_counts` + Usage§9.2 | 実装あり・静的、GUI未確認 |
+| FR-07 | Architecture§5、UI状態 | `DownloadService.run_download, is_running` | `test_rejects_second_download_while_running` | 実装あり・静的 |
+| FR-08 | UI入力、Architecture§7.1 | `validate_youtube_url`, `validate_output_directory` | `tests/test_validation.py` + URL厳密性の追加判断 | 一部実装・静的、動画以外を許可し得る差異維持 |
+| FR-09 | Usage§導入 | `run.ps1`, `src/main.py: main` | Usage§9.2手動起動 | 実装あり・今回はスクリプト未実行 |
+| FR-10 | UI状態、外部§2 | `DownloadService.validate_environment`, `ModernUI._check_environment` | `test_validate_environment` + FFmpeg不在の手動確認 | 実装あり・静的 |
+| NFR-01 | Usage前提 | `requirements.txt`, `pyproject.toml`, `run.ps1` | 既存品質コマンド、環境起動 | 宣言確認のみ、Black py313との既知差異 |
+| NFR-02 | Architecture§5、UI状態 | worker + UI queue | サービステスト + GUI応答の手動受入 | 実装あり・静的、GUI未確認 |
+| NFR-03 | Architecture§7 | validation/config境界 | validation/config単体、秘密の差分検査 | 一部実装・静的、URL差異維持 |
+| NFR-04 | Architecture§6.1 | `ConfigManager.save` flush/fsync/replace | `test_round_trip_settings`, `test_save_failure_is_reported` | 実装あり・静的 |
+| NFR-05 | 外部§3 | `_build_options`: socket_timeout/retries/fragment_retries | `test_successful_download_builds_expected_options`はsocket_timeout=30を検査。retries=3とfragment_retries=3は静的照合のみ | 実装あり・今回はテスト未実行。過去成功と区別 |
+| NFR-06 | Architecture§3 | src/ui→src/core、callback境界 | 構造・型設定の静的確認 | 実装あり・静的 |
+| NFR-07 | 外部§4 | `DownloadService._safe_error_message` | `test_failure_masks_url_and_finishes` | 実装あり・静的 |
+| NFR-08 | UI-003 | `ModernUI._log, _toggle_logs` | 手動ログ確認。永続ログ対象外 | 実装あり・静的、GUI未確認 |
+| NFR-09 | UI§4 | 対象基準未決定 | 基準確定後に受入定義 | 未決定・未実行 |
+| NFR-10 | 第8章 | 性能目標・計測なし | 値確定後に試験定義 | 未決定・未実行 |
 
-1. 本書：目的、対象範囲、要求、実装状況を把握する。
-2. [アーキテクチャ](Architecture.md)：構造、データ、処理、設計判断を把握する。
-3. [使い方ガイド](Usage.md)：導入、操作、運用、障害対応、受入確認を実施する。
-
+[概要](SystemOverview.md)→本書→[Architecture](Architecture.md)→[UI](UI_design.md)→[用語](Glossary.md)→[外部連携](ExternalIntegrations.md)。導入・障害対応・手動受入は[Usage](Usage.md)へ分離する。
 ## 10. 変更履歴
 
-| 文書版数 | 更新日 | 変更内容 |
+| 文書版数 | 2.1.0 |
 | --- | --- | --- |
 | 2.0.1 | 2026-08-24 | 主要機能実装後の現状維持方針と例外的な対応判断の基準を追加 |
 | 2.0.0 | 2026-08-19 | 目的から実装状況までを再構成し、用語、要件 ID、状態区分、実装差異、トレーサビリティを統一 |
