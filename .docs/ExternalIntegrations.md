@@ -1,8 +1,7 @@
 # Music DL 外部サービス・API連携設計書
 
-文書版数: 1.0 / 最終更新日: 2026-10-23 / 対象システム版: リリース版数未定義（基準HEADの実装）
-確認基準HEAD: `b816b2f7ddd06b30a9006ff0de1ceec73765a962` / 対象読者: 実装・保守・運用担当者
-対象範囲: yt-dlp・YouTube・FFmpegとローカルファイル副作用。
+文書版数: 3.0 / 更新日: 2026-10-25 / 確認基準Git: `95c2ec0d9b289f8548d990d1feb882462ce7f0e0` / 検証区分: 静的確認のみ（製品・正式Gate未実行）
+
 
 目的は、外部SDKの設定・通信と、固定単体テストで保証できる範囲を分けることである。秘密値・実URL・保存先の個人情報は転記しない。
 
@@ -40,4 +39,4 @@ workerはExceptionを捕捉しHTTP/HTTPS URLを[URL]へ置換、空白正規化�
 
 ## 5. テストと未確認
 
-`tests/test_download_service.py` のFakeDownloader/実行ファイルfinder代替で、option、進捗、失敗URL隠蔽、単一実行、FFmpeg不足を検査する定義がある。今回未実行で静的照合のみ。YouTube接続・実FFmpeg・MP3生成/再生・network障害の手動受入は未確認。必要時の実機受入手順は[Usage§9.2](Usage.md#92-リリース前の手動受入)。
+`tests/test_download_service.py` のFakeDownloader/実行ファイルfinder代替で、option、進捗、失敗URL隠蔽、単一実行、FFmpeg不足を検査する定義がある。今回未実行で静的照合のみ。YouTube接続・実FFmpeg・MP3生成/再生・network障害の手動受入は未確認。必要時の実機受入手順は[Usage§9.2](UI_design.md#h-75f337dae8a8)。

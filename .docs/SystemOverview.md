@@ -1,8 +1,7 @@
 # Music DL システム概要
 
-文書版数: 1.0 / 最終更新日: 2026-10-23 / 対象システム版: リリース版数未定義（基準HEADの実装）
-確認基準HEAD: `b816b2f7ddd06b30a9006ff0de1ceec73765a962` / 対象読者: 初めて読む人・利用者・開発参加者
-対象範囲: Windowsデスクトップで単一動画からMP3を保存する構成と制約。
+文書版数: 3.0 / 更新日: 2026-10-25 / 確認基準Git: `95c2ec0d9b289f8548d990d1feb882462ce7f0e0` / 検証区分: 静的確認のみ（製品・正式Gate未実行）
+
 
 目的は、コマンド操作に不慣れな利用者がURL・音質・保存先を一画面で扱える構成を理解することである。権利・許諾を持つ対象だけを扱い、権利確認をアプリが代行しない。
 
@@ -41,4 +40,4 @@ GUI/core/単体テストのコードが存在し、2026-10-16保存先空値修�
 
 ## 5. 読み進め方
 
-[要件ProjectContext](ProjectContext.md)は既存FR/NFR・受入、[詳細Architecture](Architecture.md)はデータ・内部処理、[UI](UI_design.md)は画面、[用語](Glossary.md)は定義、[外部連携](ExternalIntegrations.md)はSDK・通信の正本。[Usage](Usage.md)は導入・運用手順であり変更後の実行成功証明ではない。
+[要件ProjectContext](ProjectContext.md)は既存FR/NFR・受入、[詳細Architecture](Architecture.md)はデータ・内部処理、[UI](UI_design.md)は画面、[用語](Glossary.md)は定義、[外部連携](ExternalIntegrations.md)はSDK・通信の正本。[Usage](UI_design.md#d-98bbb2166f)は導入・運用手順であり変更後の実行成功証明ではない。

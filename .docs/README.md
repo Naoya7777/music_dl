@@ -1,20 +1,30 @@
-# Music DL 文書索引
+# music_dl 文書入口
 
-文書版数: 1.0 / 最終更新日: 2026-10-23 / 対象システム版: リリース版数未定義（基準HEADの実装）
-確認基準HEAD: `b816b2f7ddd06b30a9006ff0de1ceec73765a962` / 対象読者: 全読者
-対象範囲: 6正本の役割と補助運用文書。
+現役の文書は基本6文書に集約する。概要から要求、内部設計、操作、用語、外部連携へ進む。現在地点は[ProjectStatus](../.codex/ProjectStatus.md)とGitが正本。今回の検証は文書の静的照合であり、過去の実行結果・正式Gate承認・本番利用承認とは区別する。
 
-## 1. 推奨閲覧順
-
-| 順 | 文書 | 正本の役割 |
+| 順 | 基本文書 | 役割 |
 | --- | --- | --- |
-| 1 | [SystemOverview](SystemOverview.md) | 目的、課題、構成図、実装範囲 |
-| 2 | [ProjectContext](ProjectContext.md) | 既存正式名を維持した要求/受入/追跡表 |
-| 3 | [Architecture](Architecture.md) | 既存正式名を維持した内部詳細/データ/失敗 |
-| 4 | [UI設計](UI_design.md) | 安定UI ID、操作、状態、未確認外観 |
-| 5 | [用語集](Glossary.md) | 用語・略語・別名の一元化 |
-| 6 | [外部連携](ExternalIntegrations.md) | SDK option・通信・変換・復旧境界 |
+| 1 | [システム概要](SystemOverview.md) | 目的・対象・全体構成と利用の流れ |
+| 2 | [要件定義書](ProjectContext.md) | 機能/非機能要件・制約・受入条件・対応状況 |
+| 3 | [詳細設計書](Architecture.md) | 責務・処理・データ・状態・例外・復旧・判断 |
+| 4 | [UI設計書](UI_design.md) | 画面/CLIの表示・入力・操作・遷移 |
+| 5 | [用語・定義集](Glossary.md) | 正式名・略語・状態・別名 |
+| 6 | [外部サービス・API連携設計書](ExternalIntegrations.md) | 接続先・認証・交換・失敗・承認境界 |
 
-## 2. 補助資料とEvidence
+## 旧文書の統合先
 
-[Usage](Usage.md)は導入・操作・障害対応・手動受入の正本。[root README](../README.md)は起動案内。[今回の全件移行台帳](DocumentationRevision-20261023.md)は調査・改訂・検査範囲。[旧移行記録](DocumentationRollout.md)と[状態履歴](../.codex/ProjectStatus.history-20261017.md)は過去Evidence、[現在状態](../.codex/ProjectStatus.md)は開発管理である。仕様文書の過去テスト件数を現在の再実行結果としない。
+旧ファイルは削除済み。保護された運用指示等が旧正式名を挙げる場合は次表の現役正本へ進む。独立した更新先を二重に維持しない。
+
+| 旧パス | 現役の正本 |
+| --- | --- |
+| `Usage.md` | [UI_design.md](UI_design.md#d-98bbb2166f) |
+
+## 履歴資料
+
+完了した移行報告・旧台帳・rolloutは現役ファイルから削除し、Git履歴を原本とする。基準commit `95c2ec0d9b289f8548d990d1feb882462ce7f0e0`の `git show <commit>:.docs/<旧パス>` で復元できる。新しい履歴コピーは作らない。文書内の旧確認日・検証日は当時の記録であり、今回の実行確認ではない。
+
+削除した移行・管理資料: `DocumentationRevision-20261023.md`, `DocumentationRollout.md`。
+
+## 基本7ファイル以外の保持対象
+
+該当なし。アプリ本体・実データ・モデル・環境はこの文書整理の変更対象外。
