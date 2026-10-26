@@ -35,4 +35,4 @@ DevNexus 9353c935b396e6ff5b03bdbb8e6d349fb5f475c2のAPPROVED Decision。Work mus
 
 [変更前の全文・過去Decision/証跡](ProjectStatus.history-20261017.md)は同じ深さでバイト保存。通常Contextへ全文投入しない。
 
-[今回の移行・検証記録](../.docs/DocumentationRollout.md)。
+[今回の移行・検証記録](../.docs/README.md)。
