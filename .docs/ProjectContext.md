@@ -1,220 +1,94 @@
-# Music DL プロジェクト概要
+# 要件定義（Music DL）
 
-| 管理項目 | 内容 |
-| --- | --- |
-| ファイル名 | `ProjectContext.md` |
-| 文書版数 | 2.1.0 |
-| 最終更新日 | 2026-10-23 |
-| 管理責任者 | 未定（プロジェクト責任者の決定後に更新） |
-| 確認基準HEAD | `b816b2f7ddd06b30a9006ff0de1ceec73765a962` |
-| 対象システム版 | リリース版数未定義（基準HEADの実装） |
-| 検証区分 | 今回は静的照合のみ。本文の過去テスト成功は日付付き履歴であり今回の再実行ではない |
-| 文書区分 | 要求・対象範囲の基準文書 |
+本書は、Music DL（`music_dl`）が満たすべき機能要件、非機能要件、利用前提、受入条件、および現行実装との差異・トレーサビリティを定義します。
 
-対象読者: 利用者・開発者・運用担当者。対象範囲: 本文に定める要求/内部設計/運用。基本6文書の役割と読順は[索引](README.md)を参照。
+---
 
-## 1. 目的、対象範囲、結論
+## 1. 基本原則と利用前提
 
-本書は、Music DL が解決する課題、対象範囲、要求、受入条件、実装状況を定義する基準文書です。利用者、プロジェクト責任者、開発者、運用担当者を対象とし、機能の採否とリリース可否は本書を起点に判断します。
+### 1.1 設計・運用の5原則
 
-Music DL は、利用者が保存する権利または許諾を持つ YouTube の単一動画から音声を取得し、Windows PC に MP3 ファイルとして保存するデスクトップアプリケーションです。URL の入力から保存までを一つの画面で完結させ、対象を単一動画と MP3 出力に限定します。
+1. **権利と法令の遵守**：著作権、YouTube利用規約、および必要な許諾を利用者自身が確認したコンテンツのみを対象とする。
+2. **境界での事前検証**：URL、保存先フォルダ、音質設定、外部プログラム（FFmpeg）を処理開始前に検証する。
+3. **UI応答性の維持**：ネットワーク取得と音声変換はバックグラウンドスレッドで実行し、GUIイベントループをブロックしない。
+4. **設定の破損防止**：設定ファイルの読み書きは検証とアトミック置換を組み合わせ、途中終了による破損を防ぐ。
+5. **プライバシー保護**：認証情報や履歴を保存せず、エラーログ出力時にはURLを `[URL]` へマスクする。
 
-重要な原則は次のとおりです。
+### 1.2 動作環境の前提
 
-1. 著作権、利用規約、必要な許諾を利用者が確認したコンテンツだけを扱う。
-2. 入力、保存先、外部プログラムを処理前に検証する。
-3. 取得・変換処理と画面処理を分離し、画面の応答性を保つ。
-4. 要求、設計、実装済みの事実、未実装事項を区別する。
-5. 未確認事項を推測で実装済みと扱わない。
+- **OS**：Windows（PowerShellおよびGUI表示が可能な環境）
+- **Python環境**：Python 3.14 および Python Launcher（`py` コマンド）
+- **外部プログラム**：`ffmpeg` がシステムの `PATH` 環境変数に登録され、コマンドラインから実行可能であること
+- **必須Pythonパッケージ**：`customtkinter==5.2.2`、`yt-dlp==2026.3.17`（`requirements.txt` 基準）
+- **保存先条件**：指定された保存先フォルダが存在し、書き込み権限と十分な空き容量があること
 
-現行実装は主要な単体テストと静的検査を通過していますが、実際の YouTube と FFmpeg を使う自動結合試験、GUI 操作試験、実 MP3 の再生確認は未整備です。また、URL 検証には単一動画だけを厳密に識別できない実装差異があります。したがって、リリース判断には[使い方ガイド](Usage.md)の手動確認も必要です。
+---
 
-### 1.1. 保守・変更方針
+## 2. 機能要件（FR）
 
-主要機能は実装済みであり、今後の機能追加・改良は予定しません。本プロジェクトは原則として現状維持とし、依存環境への追従または重大な不具合への対応が必要になった場合に限り、影響と必要性を確認したうえで個別に対応可否を判断します。
+| 要件ID | 要件名 | 受入条件 | 実装・検証状況 |
+| :--- | :--- | :--- | :--- |
+| **`FR-01`** | **単一動画URLの入力** | URL入力欄への手入力および「貼り付け」ボタンによるクリップボード貼り付けの両方が利用できること。 | 実装済（単体検証済） |
+| **`FR-02`** | **音声取得とMP3変換** | 有効なYouTube単一動画URLから音声を取得し、指定した保存先に再生可能なMP3ファイルを生成できること。 | 実装済（モック単体検証済・実動画再生は手動受入対象） |
+| **`FR-03`** | **音声ビットレート選択** | `128`、`192`、`320` kbpsの3段階から音質を選択でき、FFmpeg変換設定（`preferredquality`）へ反映されること。 | 実装済（単体検証済） |
+| **`FR-04`** | **保存先フォルダの選択** | フォルダ選択ダイアログから、存在し書き込み可能な保存先ディレクトリを指定できること。 | 実装済（単体検証済） |
+| **`FR-05`** | **設定の永続化と復元** | 選択した保存先フォルダとビットレートを `settings.json` に保存し、次回起動時に自動復元できること。 | 実装済（単体検証済） |
+| **`FR-06`** | **処理状況とログの表示** | 待機（`READY`）、処理中（`WORKING`）、完了（`DONE`）、確認（`CHECK`）、失敗（`ERROR`）の状態、進捗バー、および画面内詳細ログを表示できること。 | 実装済（単体検証済） |
+| **`FR-07`** | **重複実行の防止** | ダウンロード・変換処理の実行中は2件目の処理開始を拒否し、入力・開始操作を無効化すること。 | 実装済（単体検証済） |
+| **`FR-08`** | **不正入力・対象外の拒否** | 空URL、YouTube以外のドメイン、`list` パラメータを含むプレイリストURL、存在しない/書き込み不可の保存先を開始前に拒否すること。 | 一部実装差異あり（後述5.1参照） |
+| **`FR-09`** | **単一スクリプト起動** | `run.ps1` の実行により、Python/FFmpeg確認、`.venv` 作成、依存パッケージ確認を経てアプリを起動できること。 | 実装済 |
+| **`FR-10`** | **FFmpeg不在時の事前通知** | FFmpegが `PATH` 上に見つからない場合、画面に理由を表示してダウンロード開始を防止すること。 | 実装済（単体検証済） |
 
-## 2. 背景、利用者、利用場面
+---
 
-### 2.1. 解決する課題
+## 3. 非機能要件（NFR）
 
-YouTube 動画の音声をローカルに保存するには、通常、コマンドライン、`yt-dlp`、FFmpeg の準備と操作が必要です。Music DL は URL、音声ビットレート、保存先、進捗、結果を一つの画面にまとめ、これらの操作に不慣れな人でも扱えるようにします。
+| 要件ID | 分類 | 要件・判断基準 | 実装・検証状況 |
+| :--- | :--- | :--- | :--- |
+| **`NFR-01`** | **対応環境** | WindowsおよびPython 3.14を基準環境として動作すること。 | Python 3.14.2で単体テスト・静的解析通過済 |
+| **`NFR-02`** | **UI応答性** | 取得・変換をワーカースレッドへ分離し、`queue.Queue` 経由の非同期更新により画面フリーズを防ぐこと。 | 実装済 |
+| **`NFR-03`** | **入力境界の安全性** | URL・保存先・FFmpegを境界で検証し、APIキーやCookie等の秘密情報を設定・ログに保持しないこと。 | 実装済（URL厳密性は5.1参照） |
+| **`NFR-04`** | **設定データ整合性** | `settings.json` 保存時は一時ファイルへの書き込み・`flush`・`os.fsync` 後に `os.replace` でアトミックに置換し、破損時は既定値へ安全にフォールバックすること。 | 実装済（単体検証済） |
+| **`NFR-05`** | **通信タイムアウト・再試行** | `yt-dlp` に対し、通信タイムアウト `socket_timeout=30` 秒、通常再試行 `retries=3` 回、フラグメント再試行 `fragment_retries=3` 回を設定すること。 | 実装済（単体検証・コード確認済） |
+| **`NFR-06`** | **保守性・責務分離** | GUI層（`src/ui`）とコア層（`src/core`）の依存を単一方向（`ui -> core`）に保ち、Ruff / Black / Pyright検査を通過すること。 | 実装済（静的検査通過済） |
+| **`NFR-07`** | **プライバシー保護** | 独自のテレメトリ送信を行わず、エラーメッセージ内のHTTP/HTTPS URLを `[URL]` に置換してログ出力すること。 | 実装済（単体検証済） |
+| **`NFR-08`** | **運用観測性** | 画面内の詳細ログパネル（メモリ内保持）により、環境確認・設定変更・処理開始・完了・エラー原因を確認できること。 | 実装済 |
+| **`NFR-09`** | **アクセシビリティ** | ダークテーマの配色管理、基本ショートカット（`Enter` 開始、`Ctrl+L` URLフォーカス）、色とテキストの併用を行うこと。 | 基本実装済（厳密な適合基準は未設定） |
+| **`NFR-10`** | **性能目標** | 外部回線速度と動画長に依存するため、アプリ固有の固定処理時間SLAは設けない。 | 対象外（未設定） |
 
-### 2.2. 利用者と関係者
+---
 
-| 区分 | 役割 |
-| --- | --- |
-| 利用者 | 保存する権利または許諾を持つ動画の音声を、個人利用、適用法令、利用規約の範囲で保存する |
-| プロジェクト責任者 | 要求、優先順位、リリース可否、文書管理責任者を決定する |
-| 開発者 | 画面、設定、取得・変換処理、検証、テストを保守する |
-| 運用担当者 | Python、FFmpeg、依存パッケージの導入と障害の一次切り分けを行う |
-| 外部提供者 | YouTube、`yt-dlp`、FFmpeg を提供し、それぞれの仕様と稼働状況を管理する |
+## 4. 要件トレーサビリティマトリクス
 
-### 2.3. 基本的な利用場面
+各要件に対応する設計箇所、実装モジュール、および単体テストの対応関係は以下のとおりです。
 
-利用者はアプリケーションを起動し、YouTube の単一動画 URL を入力します。必要に応じて音声ビットレートと保存先を変更して処理を開始し、進捗と結果を画面で確認します。成功した場合、指定したフォルダに動画タイトルを基にした MP3 ファイルが保存されます。
+| 要件ID | 対応する設計セクション | 実装モジュール・主要クラス/関数 | 対応する単体テスト（`tests/`） |
+| :--- | :--- | :--- | :--- |
+| `FR-01` | [UI_design.md](./UI_design.md) (`UI-001`) | `src/ui/app_window.py` (`ModernUI._paste_clipboard`, `_start_download`) | `test_validation.py` (`test_accepts_supported_video_urls`) |
+| `FR-02` | [Architecture.md](./Architecture.md) §4 | `src/core/download_service.py` (`DownloadService._download_worker`) | `test_download_service.py` (`test_successful_download_builds_expected_options`) |
+| `FR-03` | [UI_design.md](./UI_design.md) (`UI-001`) | `src/core/config.py` (`AppConfig.with_bitrate`), `DownloadService._build_options` | `test_config.py`, `test_download_service.py` |
+| `FR-04` | [UI_design.md](./UI_design.md) (`UI-002`) | `src/ui/app_window.py` (`_change_directory`), `src/core/validation.py` (`validate_output_directory`) | `test_validation.py` (`test_rejects_blank_output_directory` 他) |
+| `FR-05` | [Architecture.md](./Architecture.md) §5 | `src/core/config.py` (`ConfigManager.load`, `save`) | `test_config.py` (`test_round_trip_settings`, `test_save_failure_is_reported`) |
+| `FR-06` | [UI_design.md](./UI_design.md) (`UI-001`, `UI-003`) | `src/ui/app_window.py` (`_on_progress`, `_on_finish`, `_drain_ui_queue`) | `test_download_service.py` (`test_progress_hook_uses_byte_counts`) |
+| `FR-07` | [Architecture.md](./Architecture.md) §4 | `src/core/download_service.py` (`run_download`, `is_running`) | `test_download_service.py` (`test_rejects_second_download_while_running`) |
+| `FR-08` | [Architecture.md](./Architecture.md) §6 | `src/core/validation.py` (`validate_youtube_url`, `validate_output_directory`) | `test_validation.py` |
+| `FR-09` | [UI_design.md](./UI_design.md) §4 | `run.ps1`, `src/main.py` (`main`) | 手動起動確認手順（[UI_design.md](./UI_design.md) §7） |
+| `FR-10` | [ExternalIntegrations.md](./ExternalIntegrations.md) §2 | `src/core/download_service.py` (`validate_environment`) | `test_download_service.py` (`test_validate_environment`) |
+| `NFR-04` | [Architecture.md](./Architecture.md) §5 | `src/core/config.py` (`ConfigManager.save`) | `test_config.py` |
+| `NFR-05` | [ExternalIntegrations.md](./ExternalIntegrations.md) §3 | `src/core/download_service.py` (`_build_options`) | `test_download_service.py` (`socket_timeout=30` 検証) |
+| `NFR-07` | [ExternalIntegrations.md](./ExternalIntegrations.md) §4 | `src/core/download_service.py` (`_safe_error_message`) | `test_download_service.py` (`test_failure_masks_url_and_finishes`) |
 
-## 3. 対象範囲と前提条件
+---
 
-### 3.1. 対象
+## 5. 既知の実装差異・制約事項・保守方針
 
-- YouTube の単一動画 URL の手入力とクリップボードからの貼り付け
-- 利用可能な音声の取得と MP3 への変換
-- 128、192、320 kbps からの音声ビットレート選択
-- 保存先フォルダの選択
-- 進捗、推定残り時間、完了、失敗、詳細ログの画面表示
-- 保存先と音声ビットレートのローカル設定ファイルへの保存と復元
-- 起動時と処理開始時の FFmpeg 確認
-- 同時に一件だけを処理する制御
+### 5.1 現行実装と要件の微細差異
 
-### 3.2. 対象外
+| 項目 | 現行実装の挙動 | 影響と扱い |
+| :--- | :--- | :--- |
+| **URL形式検証の許容範囲**（`FR-08`） | `validate_youtube_url()` は `/watch` パスの場合に `v` クエリパラメータを必須とする一方、それ以外のパス（`/shorts/...` やチャンネルページ等）ではパスが空でなければ通過させる。 | 動画ページ以外のYouTube URLが入力された場合、開始前検証を通過して `yt-dlp` 実行時にエラーとなる。現状維持方針のもと、既知の仕様差異として管理する。 |
+| **`run.ps1` の既存仮想環境再利用** | `.venv` が既に存在し、`customtkinter` と `yt_dlp` がインポート可能な場合、Pythonマイナーバージョンやパッケージの厳密な固定バージョン一致を再検査しない。 | 環境更新時に不整合が疑われる場合は、運用手順に従い `.venv` を再作成する。 |
 
-- プレイリストまたは複数 URL の一括処理
-- MP3 以外の音声形式、動画、字幕、サムネイルの保存
-- 歌詞やメタデータの編集
-- 処理の一時停止、再開、キャンセル、履歴管理
-- 利用者認証、クラウド同期、遠隔監視、永続ログ
-- デジタル著作権管理（DRM）の回避、権利確認、利用許諾の代行
+### 5.2 運用・保守方針
 
-### 3.3. 前提条件と依存関係
-
-- 利用者は対象コンテンツを保存する権利または許諾を持ち、YouTube の利用規約、著作権法、その他の適用法令を守る。
-- Windows、インターネット接続、Python 3.14、Python Launcher、FFmpeg を利用できる。
-- Python パッケージの `customtkinter` と `yt-dlp` を導入できる。
-- 保存先に書き込み権限と十分な空き容量がある。
-- 取得可否は、YouTube、`yt-dlp`、FFmpeg、ネットワーク、動画の公開状態と地域制限に影響される。
-- ファイル名、同名ファイル、取得失敗時の部分ファイルの扱いは、独自制御を追加していない範囲で `yt-dlp` に従う。
-
-## 4. システム全体像と主要フロー
-
-```text
-利用者
-  │ URL、音声ビットレート、保存先
-  ▼
-Music DL の画面
-  │ 検証済みの入力と設定
-  ▼
-取得・変換サービス
-  ├── yt-dlp ── YouTube から音声と動画情報を取得
-  ├── FFmpeg ── 取得した音声を MP3 へ変換
-  ├── 保存先 ── 完成した MP3 を保存
-  └── 画面 ──── 進捗、ログ、成否を通知
-```
-
-主要フローは次のとおりです。
-
-1. `run.ps1` が Python Launcher と FFmpeg を確認し、必要に応じて仮想環境とパッケージを準備する。
-2. アプリケーションが `settings.json` を読み、不正な場合は既定値へ戻す。
-3. 利用者が URL、音声ビットレート、保存先を指定する。
-4. 画面と取得・変換サービスが URL、保存先、FFmpeg を検証する。
-5. バックグラウンドスレッドが `yt-dlp` で音声を取得し、FFmpeg で MP3 に変換する。
-6. 画面が進捗と成否を表示し、成功時は指定先に MP3 を残す。
-
-内部構造、データ、計算方法は[アーキテクチャ](Architecture.md)、具体的な操作と障害対応は[使い方ガイド](Usage.md)を参照してください。
-
-## 5. 用語とデータの基準
-
-本書で定義する名称を全体の正式名称とします。コード上の識別子は、必要な場合に併記します。
-
-正式名称・別名・定義は[用語・定義集](Glossary.md)へ集約する。
-
-永続データは `settings.json` の保存先フォルダと音声ビットレートだけです。利用者情報、認証情報、Cookie、履歴、ログは永続化しません。スキーマは[アーキテクチャ](Architecture.md)を基準とします。
-
-## 6. 機能要件
-
-| ID | 要件 | 受入条件 | 現行状況 |
-| --- | --- | --- | --- |
-| FR-01 | 単一動画 URL を入力できる | 手入力と貼り付けの両方を利用できる | 実装済み・単体確認済み |
-| FR-02 | 音声を取得し、MP3 に変換できる | 有効な対象 URL から再生可能な MP3 を生成できる | 実装済み・外部サービスを使う自動確認は未実施 |
-| FR-03 | 音声ビットレートを選択できる | 128、192、320 kbps のいずれかを FFmpeg の変換設定へ渡す | 実装済み・単体確認済み |
-| FR-04 | 保存先フォルダを選択できる | 存在し、書き込み可能なフォルダを指定できる | 実装済み。2026-10-16保存先境界修正の過去Evidenceあり、今回は静的確認のみ |
-| FR-05 | 設定を保存し復元できる | 保存先と音声ビットレートを次回起動時に読み込む | 実装済み・単体確認済み |
-| FR-06 | 処理状況を確認できる | 進捗、変換中、完了、失敗を画面で区別できる | 実装済み・GUI 自動確認は未実施 |
-| FR-07 | 重複実行を防止する | 実行中は二件目を開始しない | 実装済み・サービス層を単体確認済み |
-| FR-08 | 対象外の入力を拒否する | 空値、YouTube 以外、プレイリスト、動画を特定しない URL、無効な保存先を開始前に拒否する | 一部実装済み。URL の厳密性に差異あり |
-| FR-09 | 一つのスクリプトで起動できる | `run.ps1` が環境確認後にアプリケーションを起動する | 実装済み・自動結合確認は未実施 |
-| FR-10 | FFmpeg の不足を通知する | FFmpeg が見つからない場合は理由を示し、取得を開始しない | 実装済み・サービス層を単体確認済み |
-
-「単体確認済み」は、外部サービスや実際の FFmpeg をテスト用の代替物に置き換えた確認を含みます。実際の MP3 生成を保証する表現ではありません。
-
-## 7. 非機能要件と運用要件
-
-| ID | 分類 | 要件・判断基準 | 現行状況 |
-| --- | --- | --- | --- |
-| NFR-01 | 対応環境 | Windows と Python 3.14 を基準とする | Python 3.14.2 で自動検証済み |
-| NFR-02 | 応答性 | 取得・変換を別スレッドで実行し、画面イベントを長時間止めない | 実装済み・GUI 自動確認は未実施 |
-| NFR-03 | 安全性 | URL、保存先、FFmpeg を境界で検証し、認証情報を設定やログへ保存しない | 一部実装済み。URL 厳密性に差異あり |
-| NFR-04 | データ整合性 | 設定値を検証し、一時ファイルからの置換で保存途中の破損を抑える | 実装済み・単体確認済み |
-| NFR-05 | 通信信頼性 | 通信タイムアウトを 30 秒、通常取得と分割データ取得の再試行回数を各 3 回とする | 実装あり。socket_timeout=30は対応単体テストの検査対象、retries=3・fragment_retries=3はコード静的確認のみ。今回はテスト未実行 |
-| NFR-06 | 保守性 | 画面、取得・変換、設定、入力検証の責務を分離する | 実装済み・静的検査済み |
-| NFR-07 | プライバシー | 独自の利用分析情報を送信しない。エラー表示中の URL を `[URL]` に置換する | 実装済み・URL 置換を単体確認済み |
-| NFR-08 | 運用性 | 画面内ログで環境確認、設定変更、開始、完了、失敗を識別できる | 実装済み・永続監視は対象外 |
-| NFR-09 | アクセシビリティ | 適合基準を定める | 未決定。現状はダークテーマと一部キーボード操作のみ |
-| NFR-10 | 性能 | 処理時間、成功率、対応データ量の数値目標を定める | 未決定。計測基盤なし |
-
-運用担当者は、障害報告に発生日時とタイムゾーン、環境のバージョン、操作、期待結果、実結果、画面表示、再現性を含めます。永続ログ、監視指標、警告通知、自動復旧はありません。
-
-## 8. 実装状況、制約、未決定事項
-
-### 8.1. 2026-08-19 時点の確認結果
-
-- Python 3.14.2、pytest 9.0.2 で単体テスト 24 件が成功した。
-- Ruff 0.15.7、Black 24.10.0、Pyright 1.1.408 の検査が成功した。
-- 実際の YouTube、FFmpeg、ネットワークを使う自動結合試験は未実施である。
-- GUI 自動試験、実 MP3 の再生確認、性能試験、アクセシビリティ試験は未実施である。
-
-### 8.2. 制約事項
-
-- 一回に処理できる URL は一件で、出力形式は MP3 だけである。
-- 取得中に終了を選ぶと、デーモンスレッドの完了は保証されない。
-- 取得失敗時の一時ファイルや未完成ファイルを独自に整理しない。
-- 接続先のレート制限に特化した待機制御はない。
-- `run.ps1` は必要なモジュールを読み込める場合、固定バージョンとの差異を確認せず既存環境を再利用する。
-- `.venv` が存在する場合、その Python の版が 3.14 かを再確認しない。
-
-### 8.3. 実装との不一致と未決定事項
-
-| 区分 | 内容 | 影響 | 推奨対応 |
-| --- | --- | --- | --- |
-| 実装差異 | URL 検証は YouTube ドメイン上のパスが空でない URL を広く許可するため、動画ページ以外を通す可能性がある | FR-08 と入力境界の厳密性を満たさない場合がある | 対応する URL 形式を明文化し、パスと必須識別子を形式別に検証する |
-| 未確認 | 実サービスから生成した MP3 の再生可能性 | FR-02 の最終受入を自動では証明できない | 権利確認済みの短い動画でリリース前手動試験を行う |
-| 未決定 | 配布形式、コード署名、自動更新 | 導入性とセキュリティ運用に影響する | 対象利用者と配布経路を決定後に要件化する |
-| 未決定 | アクセシビリティ基準、性能目標 | 品質の合否を数値で判断できない | 対象利用者と利用量を基に受入基準を定める |
-| 将来検討 | キャンセル、部分ファイル整理、永続ログ | 障害復旧性と問い合わせ対応に影響する | 優先順位と保存データの扱いを決めて別要件として承認する |
-
-上記は仕様を独断で変更せず、現行要求と実装の差異または未決定事項として維持します。
-
-## 9. トレーサビリティと関連文書
-
-既存ID・要件・受入条件は第6〜7章を維持する。下表の「実装あり」はコードの存在、「静的」は今回の検証。外部実行・GUI受入は未実施。既存の過去検証は第8章およびProjectStatus/履歴の日付付き記録を参照し、今回の成功としない。決定状況は既存要件として確定、明示した未決定事項は例外とする。
-
-| ID | 設計・UI | 実装・識別子 | テスト/受入 | 実装・検証 |
-| --- | --- | --- | --- | --- |
-| FR-01 | UI-001入力 | `src/ui/app_window.py: ModernUI._paste_clipboard, _start_download`; `src/core/validation.py: validate_youtube_url` | `tests/test_validation.py: test_accepts_supported_video_urls` + 手動貼付 | 実装あり・静的、GUI未確認 |
-| FR-02 | Architecture§5、外部§2 | `src/core/download_service.py: DownloadService._download_worker` | `tests/test_download_service.py: test_successful_download_builds_expected_options`; Usage§9.2実MP3 | 実装あり・静的、実取得/再生未確認 |
-| FR-03 | UI-001音質 | `AppConfig.with_bitrate`, `DownloadService._build_options` | `test_rejects_unsupported_bitrate`, `test_successful_download_builds_expected_options` | 実装あり・静的 |
-| FR-04 | UI-002保存先 | `ModernUI._change_directory`; `validate_output_directory` | `test_rejects_blank_output_directory`, `test_preserves_whitespace_in_output_directory`, file/missing検査 | 実装あり・静的、書込可能性の実操作は未確認 |
-| FR-05 | Architecture§6.1 | `src/core/config.py: ConfigManager.load/save` | `tests/test_config.py: test_round_trip_settings, test_save_failure_is_reported` | 実装あり・静的 |
-| FR-06 | UI-001/003、Architecture§5 | `ModernUI._on_progress, _on_finish, _drain_ui_queue` | `test_progress_hook_uses_byte_counts` + Usage§9.2 | 実装あり・静的、GUI未確認 |
-| FR-07 | Architecture§5、UI状態 | `DownloadService.run_download, is_running` | `test_rejects_second_download_while_running` | 実装あり・静的 |
-| FR-08 | UI入力、Architecture§7.1 | `validate_youtube_url`, `validate_output_directory` | `tests/test_validation.py` + URL厳密性の追加判断 | 一部実装・静的、動画以外を許可し得る差異維持 |
-| FR-09 | Usage§導入 | `run.ps1`, `src/main.py: main` | Usage§9.2手動起動 | 実装あり・今回はスクリプト未実行 |
-| FR-10 | UI状態、外部§2 | `DownloadService.validate_environment`, `ModernUI._check_environment` | `test_validate_environment` + FFmpeg不在の手動確認 | 実装あり・静的 |
-| NFR-01 | Usage前提 | `requirements.txt`, `pyproject.toml`, `run.ps1` | 既存品質コマンド、環境起動 | 宣言確認のみ、Black py313との既知差異 |
-| NFR-02 | Architecture§5、UI状態 | worker + UI queue | サービステスト + GUI応答の手動受入 | 実装あり・静的、GUI未確認 |
-| NFR-03 | Architecture§7 | validation/config境界 | validation/config単体、秘密の差分検査 | 一部実装・静的、URL差異維持 |
-| NFR-04 | Architecture§6.1 | `ConfigManager.save` flush/fsync/replace | `test_round_trip_settings`, `test_save_failure_is_reported` | 実装あり・静的 |
-| NFR-05 | 外部§3 | `_build_options`: socket_timeout/retries/fragment_retries | `test_successful_download_builds_expected_options`はsocket_timeout=30を検査。retries=3とfragment_retries=3は静的照合のみ | 実装あり・今回はテスト未実行。過去成功と区別 |
-| NFR-06 | Architecture§3 | src/ui→src/core、callback境界 | 構造・型設定の静的確認 | 実装あり・静的 |
-| NFR-07 | 外部§4 | `DownloadService._safe_error_message` | `test_failure_masks_url_and_finishes` | 実装あり・静的 |
-| NFR-08 | UI-003 | `ModernUI._log, _toggle_logs` | 手動ログ確認。永続ログ対象外 | 実装あり・静的、GUI未確認 |
-| NFR-09 | UI§4 | 対象基準未決定 | 基準確定後に受入定義 | 未決定・未実行 |
-| NFR-10 | 第8章 | 性能目標・計測なし | 値確定後に試験定義 | 未決定・未実行 |
-
-[概要](SystemOverview.md)→本書→[Architecture](Architecture.md)→[UI](UI_design.md)→[用語](Glossary.md)→[外部連携](ExternalIntegrations.md)。導入・障害対応・手動受入は[Usage](Usage.md)へ分離する。
-## 10. 変更履歴
-
-| 文書版数 | 2.1.0 |
-| --- | --- | --- |
-| 2.0.1 | 2026-08-24 | 主要機能実装後の現状維持方針と例外的な対応判断の基準を追加 |
-| 2.0.0 | 2026-08-19 | 目的から実装状況までを再構成し、用語、要件 ID、状態区分、実装差異、トレーサビリティを統一 |
-| 1.0.0 | 2026-08-12 | 原則、要求、判断基準を整理し、関連文書への参照を整備 |
+本プロジェクトは主要機能の実装を完了しており、**機能凍結（現状維持）** とします。キャンセル機能、部分ファイル自動清掃、永続ログ等を含む新規機能の追加は行わず、外部仕様変更や重大不具合発生時のみ最小限の修正を検討します。
