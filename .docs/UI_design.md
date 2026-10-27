@@ -1,5 +1,9 @@
 # UI設計・操作ガイド（Music DL）
 
+- **Version**: `v5.1`
+- **Updated**: `2026-10-27 JST`
+- **Baseline Commit**: `29b82cec622c99e14e21dee7886012f0f3d2ab6e`
+
 本書は、Music DL（`music_dl`）のGUI画面設計（画面要素、レイアウト、状態遷移）およびWindows環境での導入・起動・基本操作・トラブルシューティング・手動受入試験の手順を定義します。
 
 ---

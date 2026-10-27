@@ -1,5 +1,9 @@
 # システム概要（Music DL）
 
+- **Version**: `v5.1`
+- **Updated**: `2026-10-27 JST`
+- **Baseline Commit**: `29b82cec622c99e14e21dee7886012f0f3d2ab6e`
+
 ## 1. システムの目的と解決する課題
 
 **Music DL（`music_dl`）** は、利用者が保存する権利または許諾を持つYouTubeの単一動画から音声を取得し、指定したビットレートのMP3ファイルとしてローカルPCに保存するWindows向けデスクトップアプリケーションです。

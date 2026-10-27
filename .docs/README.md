@@ -1,5 +1,10 @@
 # Music DL ドキュメント索引
 
+- **Version**: `v5.1`
+- **Updated**: `2026-10-27 JST`
+- **Baseline Commit**: `29b82cec622c99e14e21dee7886012f0f3d2ab6e`
+- **Verification**: `Static verification (Markdown / Links / UTF-8) + Independent read-only review`
+
 本書は、YouTubeの単一動画から音声を取得してMP3として保存するWindowsデスクトップアプリケーション **Music DL（`music_dl`）** の公式ドキュメント体系（`.docs/`）の案内窓口です。
 
 ---

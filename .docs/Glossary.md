@@ -1,5 +1,9 @@
 # 用語集（Music DL）
 
+- **Version**: `v5.1`
+- **Updated**: `2026-10-27 JST`
+- **Baseline Commit**: `29b82cec622c99e14e21dee7886012f0f3d2ab6e`
+
 本書は、Music DL（`music_dl`）のドキュメント、ソースコード、設定ファイル、およびGUI画面で使用される用語・状態・識別子の定義をまとめた正本です。
 
 ---
