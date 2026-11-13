@@ -9,5 +9,9 @@
     ".docs/SystemOverview.md",
     ".docs/UI_design.md",
     "docs/md/README.md"
-  ]
+  ],
+  "exclusions": {
+    ".docs/README.md": "既存の参照入口。docs/md/README.mdをHTML入口に使用する。"
+  },
+  "diagrams": true
 }

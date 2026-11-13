@@ -2,9 +2,11 @@
 <html lang="ja">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; base-uri 'none'; form-action 'none'">
 <title>詳細設計：アーキテクチャ（Music DL） | music_dl</title>
 <link rel="stylesheet" href="theme.css">
 <script src="view.js" defer></script>
+<script src="diagrams.js" defer></script>
 <a class="skip" href="#main">本文へ移動</a>
 <div class="layout">
   <aside><a class="brand" href="index.html"><span aria-hidden="true">◇</span>music_dl</a>
@@ -107,7 +109,7 @@
 </ol>
 <hr />
 <h2 id="3-取得変換フローと非同期スレッド制御">3. 取得・変換フローと非同期スレッド制御</h2>
-<pre><code class="language-mermaid">sequenceDiagram
+<figure class="card diagram"><figcaption>構成・処理図</figcaption><button type="button" aria-pressed="false" hidden>図を拡大</button><div class="diagram-viewport scroll" role="region" aria-label="図の表示領域" tabindex="0"></div><p role="status"></p><details><summary>Mermaidの記述</summary><pre><code>sequenceDiagram
     actor User as 利用者
     participant UI as ModernUI (GUI Thread)
     participant Queue as UI Queue (queue.Queue)
@@ -134,8 +136,7 @@
     Worker-&gt;&gt;Svc: finally: _is_running = False
     Queue--&gt;&gt;UI: _drain_ui_queue() (50ms周期)
     UI-&gt;&gt;UI: 進捗 1.0・状態 DONE・URLクリア・操作再有効化
-</code></pre>
-<h3 id="スレッド制御の要点">スレッド制御の要点</h3>
+</code></pre></details></figure><h3 id="スレッド制御の要点">スレッド制御の要点</h3>
 <ul>
 <li><strong>デーモンスレッドの採用</strong>：ワーカースレッド（<code>music-dl-worker</code>）は <code>daemon=True</code> として起動されます。処理中に利用者がウィンドウ終了確認ダイアログで強制終了（「はい」）を選択した場合、スレッドの完了や未完成ファイルの削除は保証されません。</li>
 <li><strong>コールバック境界</strong>：<code>DownloadService</code> は <code>on_progress(float, str)</code>、<code>on_log(str, str)</code>、<code>on_finish(bool, str)</code> の3種のコールバックを受け取ります。<code>ModernUI</code> はこれらを <code>_post_ui()</code> でラップして <code>queue.Queue</code> に格納し、メインスレッドの <code>after(50, _drain_ui_queue)</code> で安全に処理します。</li>

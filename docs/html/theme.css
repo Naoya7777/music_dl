@@ -64,6 +64,11 @@ img { max-width: 100%; height: auto; }
 .flow li + li::before { content: ""; position: absolute; width: 8px; height: 8px; border: solid var(--blue); border-width: 0 2px 2px 0; transform: rotate(45deg); top: -22px; left: calc(50% - 4px); }
 .flow li[aria-current] { border-color: var(--blue); background: var(--active); }
 .flow p { margin: 4px 0 0; }
+.diagram { margin-inline: 0; }
+.diagram figcaption { font-weight: 750; margin-bottom: 8px; }
+.diagram-viewport { margin-block: 12px; padding: 4px; }
+.diagram-viewport svg { display: block; width: 100%; height: auto; }
+.diagram [role="status"]:empty { display: none; }
 [hidden] { display: none !important; }
 
 @media (max-width: 1050px) { .layout { grid-template-columns: 205px minmax(0, 1fr); } }

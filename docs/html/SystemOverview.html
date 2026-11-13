@@ -2,9 +2,11 @@
 <html lang="ja">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; base-uri 'none'; form-action 'none'">
 <title>システム概要（Music DL） | music_dl</title>
 <link rel="stylesheet" href="theme.css">
 <script src="view.js" defer></script>
+<script src="diagrams.js" defer></script>
 <a class="skip" href="#main">本文へ移動</a>
 <div class="layout">
   <aside><a class="brand" href="index.html"><span aria-hidden="true">◇</span>music_dl</a>
@@ -52,7 +54,7 @@
 <hr />
 <h2 id="3-システム全体構成と処理の流れ">3. システム全体構成と処理の流れ</h2>
 <p>Music DLは、画面表示とユーザー操作を担う <strong>プレゼンテーション層（CustomTkinter GUI）</strong> と、入力検証・設定管理・音声取得制御を担う <strong>コア層（Core Services）</strong> を分離したレイヤードアーキテクチャを採用しています。外部通信やデータベースサーバー、ユーザー認証機構は持たず、ローカルPC上で完結して動作します。</p>
-<pre><code class="language-mermaid">flowchart LR
+<figure class="card diagram"><figcaption>構成・処理図</figcaption><button type="button" aria-pressed="false" hidden>図を拡大</button><div class="diagram-viewport scroll" role="region" aria-label="図の表示領域" tabindex="0"></div><p role="status"></p><details><summary>Mermaidの記述</summary><pre><code>flowchart LR
     User[&quot;利用者&quot;] --&gt; GUI[&quot;GUI (ModernUI)&lt;br/&gt;src/ui/app_window.py&quot;]
     ConfigFile[(&quot;settings.json&quot;)] &lt;--&gt;|&quot;読込 / アトミック置換保存&quot;| Config[&quot;ConfigManager&lt;br/&gt;src/core/config.py&quot;]
     GUI &lt;--&gt; Config
@@ -64,8 +66,7 @@
     FFmpeg --&gt;|&quot;MP3出力&quot;| Output[(&quot;保存先フォルダ&lt;br/&gt;(*.mp3)&quot;)]
     Service --&gt;|&quot;進捗・ログ・完了通知&quot;| Queue[&quot;UI通知キュー (queue.Queue)&quot;]
     Queue --&gt;|&quot;50ms周期ポーリング&quot;| GUI
-</code></pre>
-<h3 id="利用から保存までの基本フロー">利用から保存までの基本フロー</h3>
+</code></pre></details></figure><h3 id="利用から保存までの基本フロー">利用から保存までの基本フロー</h3>
 <ol>
 <li><strong>起動と環境確認</strong>：起動スクリプト <code>run.ps1</code>（または直接起動）によりアプリが立ち上がり、<code>settings.json</code> から前回の保存先と音質を復元します。同時に <code>PATH</code> 上の <code>ffmpeg</code> の存在を確認します。</li>
 <li><strong>入力と設定変更</strong>：利用者が単一動画URLを入力（またはクリップボードから貼り付け）し、必要に応じて音質（128k / 192k / 320k）と保存先フォルダを変更します。設定変更時は一時ファイル経由のアトミック置換により <code>settings.json</code> が即座に更新されます。</li>
