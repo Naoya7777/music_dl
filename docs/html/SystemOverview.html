@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="ja">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>システム概要（Music DL） | music_dl</title>
+<link rel="stylesheet" href="theme.css">
+<script src="view.js" defer></script>
+<a class="skip" href="#main">本文へ移動</a>
+<div class="layout">
+  <aside><a class="brand" href="index.html"><span aria-hidden="true">◇</span>music_dl</a>
+  <nav aria-label="文書"><a href="Architecture.html">詳細設計：アーキテクチャ（Music DL）</a><a href="ExternalIntegrations.html">外部サービス・API連携設計（Music DL）</a><a href="Glossary.html">用語集（Music DL）</a><a href="ProjectContext.html">要件定義（Music DL）</a><a href="SystemOverview.html" aria-current=page>システム概要（Music DL）</a><a href="UI_design.html">UI設計・操作ガイド（Music DL）</a><a href="README.html">MP3を取得する流れ</a></nav></aside>
+  <main id="main" tabindex="-1">
+    <header><a href="index.html">ドキュメント</a><a href="../../.docs/SystemOverview.md">Markdown正本</a></header>
+    <details class="card"><summary>章一覧</summary><ul><li><a href="#1-%E3%82%B7%E3%82%B9%E3%83%86%E3%83%A0%E3%81%AE%E7%9B%AE%E7%9A%84%E3%81%A8%E8%A7%A3%E6%B1%BA%E3%81%99%E3%82%8B%E8%AA%B2%E9%A1%8C">1. システムの目的と解決する課題</a></li><li><a href="#2-%E6%83%B3%E5%AE%9A%E5%88%A9%E7%94%A8%E8%80%85%E3%81%A8%E5%88%A9%E7%94%A8%E3%82%B7%E3%83%8A%E3%83%AA%E3%82%AA">2. 想定利用者と利用シナリオ</a></li><li><a href="#3-%E3%82%B7%E3%82%B9%E3%83%86%E3%83%A0%E5%85%A8%E4%BD%93%E6%A7%8B%E6%88%90%E3%81%A8%E5%87%A6%E7%90%86%E3%81%AE%E6%B5%81%E3%82%8C">3. システム全体構成と処理の流れ</a></li><li><a href="#4-%E5%AF%BE%E8%B1%A1%E7%AF%84%E5%9B%B2%E3%81%A8%E5%AF%BE%E8%B1%A1%E5%A4%96%E3%82%B9%E3%82%B3%E3%83%BC%E3%83%97%E5%A2%83%E7%95%8C">4. 対象範囲と対象外（スコープ境界）</a></li><li><a href="#5-%E7%8F%BE%E5%9C%A8%E3%81%AE%E5%AE%9F%E8%A3%85%E7%8A%B6%E6%B3%81%E3%81%A8%E9%81%8B%E7%94%A8%E4%BF%9D%E5%AE%88%E6%96%B9%E9%87%9D">5. 現在の実装状況と運用・保守方針</a></li></ul></details><article><h1 id="システム概要music-dl">システム概要（Music DL）</h1>
+<ul>
+<li><strong>Version</strong>: <code>v5.1</code></li>
+<li><strong>Updated</strong>: <code>2026-10-27 JST</code></li>
+<li><strong>Baseline Commit</strong>: <code>29b82cec622c99e14e21dee7886012f0f3d2ab6e</code></li>
+</ul>
+<h2 id="1-システムの目的と解決する課題">1. システムの目的と解決する課題</h2>
+<p><strong>Music DL（<code>music_dl</code>）</strong> は、利用者が保存する権利または許諾を持つYouTubeの単一動画から音声を取得し、指定したビットレートのMP3ファイルとしてローカルPCに保存するWindows向けデスクトップアプリケーションです。</p>
+<p>従来、YouTube上の音声をMP3として手元に保存するには、コマンドラインから <code>yt-dlp</code> や <code>FFmpeg</code> のオプションを直接指定する必要があり、コマンド操作に不慣れな利用者にとって導入と操作の負担が大きいという課題がありました。</p>
+<p>Music DLは、<strong>「URLの入力・貼り付け」「音質（128 / 192 / 320 kbps）の選択」「保存先フォルダの指定」「進捗確認と詳細ログ表示」を単一のGUIウィンドウに集約</strong> し、複雑なコマンド操作を意識せずに安全かつ手軽にMP3保存を行える環境を提供します。</p>
+<blockquote>
+<p><strong>権利と利用規約に関する基本原則</strong>
+本アプリケーションは、利用者が著作権法・YouTube利用規約・必要な許諾を確認したコンテンツのみを対象とします。DRM（デジタル著作権管理）の回避や権利判定の代行は一切行いません。</p>
+</blockquote>
+<hr />
+<h2 id="2-想定利用者と利用シナリオ">2. 想定利用者と利用シナリオ</h2>
+<div class="scroll" role="region" aria-label="表" tabindex="0"><table>
+<thead>
+<tr>
+<th style="text-align:left">対象ロール</th>
+<th style="text-align:left">主な利用シナリオ</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left"><strong>一般利用者</strong></td>
+<td style="text-align:left">権利・許諾を確認済みの単一動画URLを入力し、好みの音質（128k / 192k / 320k）と保存先フォルダを選んでMP3ファイルを保存する。</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>導入・運用担当者</strong></td>
+<td style="text-align:left">Windows環境へのPython 3.14およびFFmpegの導入、<code>run.ps1</code> による初期セットアップ、およびエラー発生時の詳細ログに基づく一次切り分けを行う。</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>開発・保守担当者</strong></td>
+<td style="text-align:left">GUI層（<code>src/ui</code>）とコア層（<code>src/core</code>）の保守、依存ライブラリ（<code>yt-dlp</code>, <code>customtkinter</code>）の互換性確認、単体テスト・静的解析による品質維持を行う。</td>
+</tr>
+</tbody>
+</table></div>
+<hr />
+<h2 id="3-システム全体構成と処理の流れ">3. システム全体構成と処理の流れ</h2>
+<p>Music DLは、画面表示とユーザー操作を担う <strong>プレゼンテーション層（CustomTkinter GUI）</strong> と、入力検証・設定管理・音声取得制御を担う <strong>コア層（Core Services）</strong> を分離したレイヤードアーキテクチャを採用しています。外部通信やデータベースサーバー、ユーザー認証機構は持たず、ローカルPC上で完結して動作します。</p>
+<pre><code class="language-mermaid">flowchart LR
+    User[&quot;利用者&quot;] --&gt; GUI[&quot;GUI (ModernUI)&lt;br/&gt;src/ui/app_window.py&quot;]
+    ConfigFile[(&quot;settings.json&quot;)] &lt;--&gt;|&quot;読込 / アトミック置換保存&quot;| Config[&quot;ConfigManager&lt;br/&gt;src/core/config.py&quot;]
+    GUI &lt;--&gt; Config
+    GUI --&gt;|&quot;URL・保存先・音質&quot;| Val[&quot;入力検証&lt;br/&gt;src/core/validation.py&quot;]
+    Val --&gt;|&quot;検証済み要求&quot;| Service[&quot;DownloadService (単一Worker)&lt;br/&gt;src/core/download_service.py&quot;]
+    Service --&gt;|&quot;オプション指定&quot;| YtDlp[&quot;yt-dlp SDK&quot;]
+    YtDlp &lt;--&gt;|&quot;音声ストリーム取得&quot;| YouTube[&quot;YouTube&quot;]
+    YtDlp --&gt;|&quot;音声抽出・変換&quot;| FFmpeg[&quot;FFmpeg (外部実行ファイル)&quot;]
+    FFmpeg --&gt;|&quot;MP3出力&quot;| Output[(&quot;保存先フォルダ&lt;br/&gt;(*.mp3)&quot;)]
+    Service --&gt;|&quot;進捗・ログ・完了通知&quot;| Queue[&quot;UI通知キュー (queue.Queue)&quot;]
+    Queue --&gt;|&quot;50ms周期ポーリング&quot;| GUI
+</code></pre>
+<h3 id="利用から保存までの基本フロー">利用から保存までの基本フロー</h3>
+<ol>
+<li><strong>起動と環境確認</strong>：起動スクリプト <code>run.ps1</code>（または直接起動）によりアプリが立ち上がり、<code>settings.json</code> から前回の保存先と音質を復元します。同時に <code>PATH</code> 上の <code>ffmpeg</code> の存在を確認します。</li>
+<li><strong>入力と設定変更</strong>：利用者が単一動画URLを入力（またはクリップボードから貼り付け）し、必要に応じて音質（128k / 192k / 320k）と保存先フォルダを変更します。設定変更時は一時ファイル経由のアトミック置換により <code>settings.json</code> が即座に更新されます。</li>
+<li><strong>開始前検証</strong>：開始ボタン押下時に、URL形式、プレイリスト除外（<code>list</code> パラメータ拒否）、保存先フォルダの存在・書き込み権限、およびFFmpegの利用可否を検証します。</li>
+<li><strong>非同期ダウンロードとMP3変換</strong>：検証通過後、バックグラウンドの単一ワーカースレッド（<code>music-dl-worker</code>）が <code>yt-dlp</code> を呼び出して最良音声を取得し（進捗 <code>0.00</code>〜<code>0.94</code>）、取得完了後（進捗 <code>0.95</code>）にFFmpegでMP3へ変換します。</li>
+<li><strong>UI通知と完了</strong>：ワーカースレッドはUI部品を直接触らず、<code>queue.Queue</code> を介してメインスレッドへ進捗・ログ・完了（進捗 <code>1.0</code>）を通知します。</li>
+</ol>
+<hr />
+<h2 id="4-対象範囲と対象外スコープ境界">4. 対象範囲と対象外（スコープ境界）</h2>
+<div class="scroll" role="region" aria-label="表" tabindex="0"><table>
+<thead>
+<tr>
+<th style="text-align:left">区分</th>
+<th style="text-align:left">内容</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left"><strong>対象（In Scope）</strong></td>
+<td style="text-align:left">・YouTubeの単一動画URLの入力・貼り付け<br/>・音声ストリームの取得とMP3形式（128 / 192 / 320 kbps）への変換<br/>・保存先フォルダと音質設定のローカル保存（<code>settings.json</code>）<br/>・単一ジョブ実行制御（二重実行防止）、進捗バー・推定残り時間・画面内詳細ログの表示</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>対象外（Out of Scope）</strong></td>
+<td style="text-align:left">・プレイリストや複数URLの一括ダウンロード<br/>・MP3以外のフォーマット出力、動画・字幕・サムネイル保存、メタデータ編集<br/>・ダウンロードの一時停止・再開・途中キャンセル機能<br/>・ダウンロード履歴の永続化、永続ログファイル出力、クラウド同期、DRM回避</td>
+</tr>
+</tbody>
+</table></div>
+<hr />
+<h2 id="5-現在の実装状況と運用保守方針">5. 現在の実装状況と運用・保守方針</h2>
+<ol>
+<li><strong>実装・テスト状況</strong>
+<ul>
+<li>GUI（<code>ModernUI</code>, <code>Theme</code>）、コア機能（<code>DownloadService</code>, <code>ConfigManager</code>, <code>validation</code>）、起動スクリプト（<code>run.ps1</code>）、および単体テスト24件・静的解析（Ruff / Black / Pyright）はすべて実装・整備済みです。</li>
+</ul>
+</li>
+<li><strong>保守方針（現状維持モード）</strong>
+<ul>
+<li>主要機能は完成しており、新規の機能追加や拡張は予定していません。原則として現状維持とし、YouTube / <code>yt-dlp</code> の仕様変更への追従や重大な不具合対応が必要になった場合のみ個別に対応します。</li>
+</ul>
+</li>
+<li><strong>既知の制約と注意点</strong>
+<ul>
+<li>URL検証において、<code>/watch?v=...</code> 以外のパス形式ではYouTubeドメイン上の非空パスを広く通す実装上の許容差があり、動画以外のページURLは <code>yt-dlp</code> 実行段階でエラーとなります。</li>
+<li>処理中にウィンドウを強制終了した場合、バックグラウンドのデーモンスレッドの完了や未完成の一時ファイルの自動削除は保証されません。</li>
+</ul>
+</li>
+</ol>
+</article>
+  </main>
+</div>
+</html>

@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="ja">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>UI設計・操作ガイド（Music DL） | music_dl</title>
+<link rel="stylesheet" href="theme.css">
+<script src="view.js" defer></script>
+<a class="skip" href="#main">本文へ移動</a>
+<div class="layout">
+  <aside><a class="brand" href="index.html"><span aria-hidden="true">◇</span>music_dl</a>
+  <nav aria-label="文書"><a href="Architecture.html">詳細設計：アーキテクチャ（Music DL）</a><a href="ExternalIntegrations.html">外部サービス・API連携設計（Music DL）</a><a href="Glossary.html">用語集（Music DL）</a><a href="ProjectContext.html">要件定義（Music DL）</a><a href="SystemOverview.html">システム概要（Music DL）</a><a href="UI_design.html" aria-current=page>UI設計・操作ガイド（Music DL）</a><a href="README.html">MP3を取得する流れ</a></nav></aside>
+  <main id="main" tabindex="-1">
+    <header><a href="index.html">ドキュメント</a><a href="../../.docs/UI_design.md">Markdown正本</a></header>
+    <details class="card"><summary>章一覧</summary><ul><li><a href="#1-%E7%94%BB%E9%9D%A2%E6%A7%8B%E6%88%90%E3%81%A8ui%E3%82%B3%E3%83%B3%E3%83%9D%E3%83%BC%E3%83%8D%E3%83%B3%E3%83%88%E4%B8%80%E8%A6%A7">1. 画面構成とUIコンポーネント一覧</a></li><li><a href="#2-%E7%94%BB%E9%9D%A2%E7%8A%B6%E6%85%8B%E3%82%B9%E3%83%86%E3%83%BC%E3%82%BF%E3%82%B9%E3%81%A8%E6%93%8D%E4%BD%9C%E5%88%B6%E5%BE%A1">2. 画面状態（ステータス）と操作制御</a></li><li><a href="#3-%E7%92%B0%E5%A2%83%E6%BA%96%E5%82%99%E3%81%A8%E8%B5%B7%E5%8B%95%E6%89%8B%E9%A0%86%E4%BD%BF%E3%81%84%E6%96%B9%E3%82%AC%E3%82%A4%E3%83%89">3. 環境準備と起動手順（使い方ガイド）</a></li><li><a href="#4-%E5%9F%BA%E6%9C%AC%E6%93%8D%E4%BD%9C%E6%89%8B%E9%A0%86mp3%E3%81%AE%E3%83%80%E3%82%A6%E3%83%B3%E3%83%AD%E3%83%BC%E3%83%89">4. 基本操作手順（MP3のダウンロード）</a></li><li><a href="#5-%E3%83%88%E3%83%A9%E3%83%96%E3%83%AB%E3%82%B7%E3%83%A5%E3%83%BC%E3%83%86%E3%82%A3%E3%83%B3%E3%82%B0%E9%9A%9C%E5%AE%B3%E5%88%87%E3%82%8A%E5%88%86%E3%81%91">5. トラブルシューティング（障害切り分け）</a></li><li><a href="#6-%E9%96%8B%E7%99%BA%E6%A4%9C%E8%A8%BC%E3%82%B3%E3%83%9E%E3%83%B3%E3%83%89%E3%81%A8%E3%83%AA%E3%83%AA%E3%83%BC%E3%82%B9%E5%89%8D%E6%89%8B%E5%8B%95%E5%8F%97%E5%85%A5%E3%83%81%E3%82%A7%E3%83%83%E3%82%AF%E3%83%AA%E3%82%B9%E3%83%88">6. 開発検証コマンドとリリース前手動受入チェックリスト</a></li></ul></details><article><h1 id="ui設計操作ガイドmusic-dl">UI設計・操作ガイド（Music DL）</h1>
+<ul>
+<li><strong>Version</strong>: <code>v5.1</code></li>
+<li><strong>Updated</strong>: <code>2026-10-27 JST</code></li>
+<li><strong>Baseline Commit</strong>: <code>29b82cec622c99e14e21dee7886012f0f3d2ab6e</code></li>
+</ul>
+<p>本書は、Music DL（<code>music_dl</code>）のGUI画面設計（画面要素、レイアウト、状態遷移）およびWindows環境での導入・起動・基本操作・トラブルシューティング・手動受入試験の手順を定義します。</p>
+<hr />
+<h2 id="1-画面構成とuiコンポーネント一覧">1. 画面構成とUIコンポーネント一覧</h2>
+<p>Music DLは、単一のメインウィンドウ（<code>ModernUI</code>）と補助ダイアログですべての操作が完結する構成です。</p>
+<div class="scroll" role="region" aria-label="表" tabindex="0"><table>
+<thead>
+<tr>
+<th style="text-align:left">画面/要素ID</th>
+<th style="text-align:left">名称</th>
+<th style="text-align:left">主な表示項目・入力コントロール・操作</th>
+<th style="text-align:left">対応要件</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left"><strong><code>UI-001</code></strong></td>
+<td style="text-align:left"><strong>メインウィンドウ</strong></td>
+<td style="text-align:left">・URL入力欄、「貼り付け」ボタン<br/>・音声ビットレート選択（<code>128k</code> / <code>192k</code> / <code>320k</code>）<br/>・保存先フォルダ表示ラベル、「変更」ボタン<br/>・「MP3をダウンロード」開始ボタン<br/>・ステータスバッジ、ステータスメッセージ、進捗バー<br/>・キーボードショートカット：<code>Enter</code>（開始）、<code>Ctrl+L</code>（URL欄フォーカス）</td>
+<td style="text-align:left"><code>FR-01</code>, <code>FR-02</code>, <code>FR-03</code>, <code>FR-06</code>, <code>FR-07</code>, <code>FR-10</code></td>
+</tr>
+<tr>
+<td style="text-align:left"><strong><code>UI-002</code></strong></td>
+<td style="text-align:left"><strong>保存先フォルダ選択ダイアログ</strong></td>
+<td style="text-align:left">・OS標準のフォルダ選択ダイアログ<br/>・選択確定時に <code>settings.json</code> をアトミック保存し、成功時のみ画面表示を更新（キャンセル時は変更なし）</td>
+<td style="text-align:left"><code>FR-04</code>, <code>FR-05</code></td>
+</tr>
+<tr>
+<td style="text-align:left"><strong><code>UI-003</code></strong></td>
+<td style="text-align:left"><strong>詳細ログパネル</strong></td>
+<td style="text-align:left">・「詳細ログを表示 / 隠す」トグルボタンによる開閉<br/>・タイムスタンプ、ログレベル（<code>INFO</code> / <code>SUCCESS</code> / <code>WARNING</code> / <code>ERROR</code>）、メッセージ一覧<br/>・エラー発生時は自動的にログパネルを展開</td>
+<td style="text-align:left"><code>FR-06</code>, <code>NFR-08</code></td>
+</tr>
+<tr>
+<td style="text-align:left"><strong><code>UI-004</code></strong></td>
+<td style="text-align:left"><strong>処理中終了確認ダイアログ</strong></td>
+<td style="text-align:left">・ダウンロード/変換中にウィンドウの閉じる（×）ボタンを押した際に表示される確認ダイアログ<br/>・「いいえ」で処理継続、「はい」で即時終了（未完成ファイルの整理は保証しない）</td>
+<td style="text-align:left">終了時安全確認</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="ウィンドウレイアウト仕様">ウィンドウレイアウト仕様</h3>
+<ul>
+<li><strong>外観テーマ</strong>：Darkモード固定（配色・フォント・角丸は <code>src/ui/theme.py</code> の <code>Theme</code> クラスで一元定義）</li>
+<li><strong>ウィンドウサイズ</strong>：
+<ul>
+<li>初期サイズ（詳細ログ非表示時）：幅 <code>760px</code> × 高さ <code>720px</code>（最小サイズ：<code>700px</code> × <code>660px</code>）</li>
+<li>詳細ログ展開時：幅 <code>760px</code> × 高さ <code>860px</code> へ自動拡張</li>
+</ul>
+</li>
+<li><strong>縦方向セクション配置</strong>：ヘッダ → URL入力・ダウンロードカード → ステータス・進捗カード → 設定カード（保存先・音質） → 詳細ログパネル</li>
+</ul>
+<hr />
+<h2 id="2-画面状態ステータスと操作制御">2. 画面状態（ステータス）と操作制御</h2>
+<p>処理の進行状況に応じて、ステータスバッジと各操作コントロールの有効/無効状態が以下のように遷移します。</p>
+<div class="scroll" role="region" aria-label="表" tabindex="0"><table>
+<thead>
+<tr>
+<th style="text-align:left">ステータス表示</th>
+<th style="text-align:left">状態の意味</th>
+<th style="text-align:left">進捗バーの値</th>
+<th style="text-align:left">入力欄・設定・開始ボタンの制御</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left"><strong><code>READY</code></strong></td>
+<td style="text-align:left">初期待機状態</td>
+<td style="text-align:left"><code>0.00</code></td>
+<td style="text-align:left">すべて有効（FFmpegが検出されている場合）</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong><code>WORKING</code></strong></td>
+<td style="text-align:left">音声取得中またはMP3変換中</td>
+<td style="text-align:left">取得中：<code>0.00</code>〜<code>0.94</code><br/>変換中：<code>0.95</code></td>
+<td style="text-align:left">URL欄、貼り付け、保存先変更、音質選択、開始ボタンを<strong>すべて無効化</strong></td>
+</tr>
+<tr>
+<td style="text-align:left"><strong><code>DONE</code></strong></td>
+<td style="text-align:left">MP3保存完了</td>
+<td style="text-align:left"><code>1.00</code></td>
+<td style="text-align:left">URL入力欄をクリアし、全コントロールを<strong>再有効化</strong></td>
+</tr>
+<tr>
+<td style="text-align:left"><strong><code>CHECK</code></strong></td>
+<td style="text-align:left">入力・操作の確認が必要</td>
+<td style="text-align:left"><code>0.00</code></td>
+<td style="text-align:left">有効（クリップボードが空の場合などに理由を表示）</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong><code>ERROR</code></strong></td>
+<td style="text-align:left">事前検証失敗、FFmpeg不在、取得/変換失敗、設定保存失敗</td>
+<td style="text-align:left"><code>0.00</code></td>
+<td style="text-align:left">起動時FFmpeg不在の場合は開始ボタンを<strong>無効化</strong>。<br/>実行時エラーの場合は全コントロールを再有効化し、<strong>詳細ログ（<code>UI-003</code>）を自動展開</strong></td>
+</tr>
+</tbody>
+</table></div>
+<hr />
+<p>
+<span id="d-98bbb2166f"></span></p>
+<h2 id="3-環境準備と起動手順使い方ガイド">3. 環境準備と起動手順（使い方ガイド）</h2>
+<h3 id="31-必要な前提環境">3.1 必要な前提環境</h3>
+<p>導入前に、Windows環境で以下の2つが利用可能であることを確認してください。</p>
+<div class="scroll" role="region" aria-label="表" tabindex="0"><table>
+<thead>
+<tr>
+<th style="text-align:left">必須ソフトウェア</th>
+<th style="text-align:left">要件</th>
+<th style="text-align:left">確認コマンド（PowerShell）</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left"><strong>Python</strong></td>
+<td style="text-align:left">Python 3.14 および Python Launcher（<code>py</code>）</td>
+<td style="text-align:left"><code>py -3.14 --version</code></td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>FFmpeg</strong></td>
+<td style="text-align:left"><code>ffmpeg.exe</code> が環境変数 <code>PATH</code> に登録されていること</td>
+<td style="text-align:left"><code>ffmpeg -version</code></td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="32-標準起動手順runps1-による自動準備起動">3.2 標準起動手順（<code>run.ps1</code> による自動準備・起動）</h3>
+<p>プロジェクトルート（<code>run.ps1</code> があるフォルダ）で以下のPowerShellコマンドを実行します。</p>
+<pre><code class="language-powershell">powershell -ExecutionPolicy Bypass -File .\run.ps1
+</code></pre>
+<p><code>run.ps1</code> は自動的に以下の処理を順番に実行します。</p>
+<ol>
+<li><code>py</code> コマンドと <code>ffmpeg</code> コマンドが <code>PATH</code> 上に存在するか確認する。</li>
+<li><code>.venv\Scripts\python.exe</code> が存在しない場合、<code>py -3.14 -m venv .venv</code> で仮想環境を作成する。</li>
+<li>仮想環境内で <code>customtkinter</code> または <code>yt_dlp</code> をインポートできない場合、<code>requirements.txt</code> から依存パッケージをインストールする。</li>
+<li><code>.venv\Scripts\python.exe -m src.main</code> を実行してGUIを起動する。</li>
+</ol>
+<h3 id="33-手動での環境構築直接起動">3.3 手動での環境構築・直接起動</h3>
+<p>スクリプトを使わずに手動で仮想環境を準備して起動する場合は、以下のコマンドを実行します。</p>
+<pre><code class="language-powershell">py -3.14 -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+.\.venv\Scripts\python.exe -m src.main
+</code></pre>
+<p>※ 相対インポートを正しく解決するため、<code>src/main.py</code> の直接指定ではなく必ず <code>-m src.main</code> モジュール形式で起動してください。</p>
+<hr />
+<h2 id="4-基本操作手順mp3のダウンロード">4. 基本操作手順（MP3のダウンロード）</h2>
+<ol>
+<li><strong>URLの入力</strong>：保存する権利・許諾を確認済みのYouTube単一動画URLを入力欄に入力するか、「貼り付け」ボタンを押します（<code>Ctrl+L</code> でURL欄へ移動可能）。</li>
+<li><strong>音質の選択</strong>：音声ビットレートを <code>128k</code>、<code>192k</code>（初期値）、<code>320k</code> から選択します。</li>
+<li><strong>保存先の確認・変更</strong>：初期値はユーザーの <code>Downloads</code> フォルダです。変更する場合は「変更」ボタンから保存先フォルダを選択します。</li>
+<li><strong>ダウンロード開始</strong>：「MP3をダウンロード」ボタンを押すか、<code>Enter</code> キーを押します。</li>
+<li><strong>完了の確認</strong>：ステータスが <code>WORKING</code>（取得中〜変換中 95%）から <code>DONE</code>（完了 100%）に変わったら、指定した保存先フォルダ内のMP3ファイルを確認・再生します。</li>
+</ol>
+<hr />
+<h2 id="5-トラブルシューティング障害切り分け">5. トラブルシューティング（障害切り分け）</h2>
+<div class="scroll" role="region" aria-label="表" tabindex="0"><table>
+<thead>
+<tr>
+<th style="text-align:left">症状</th>
+<th style="text-align:left">主な原因</th>
+<th style="text-align:left">確認・対処手順</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left"><strong><code>run.ps1</code> 実行時に起動せず終了する</strong></td>
+<td style="text-align:left">Python 3.14 または FFmpeg の未導入・PATH未設定、または初回パッケージ導入時の通信エラー</td>
+<td style="text-align:left">PowerShellで <code>py -3.14 --version</code> と <code>ffmpeg -version</code> が両方成功するか確認する。既存 <code>.venv</code> が破損している場合は <code>.venv</code> を削除して再実行する。</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>起動直後から開始ボタンが押せない</strong></td>
+<td style="text-align:left">起動時の環境チェックで <code>ffmpeg</code> が検出されなかった</td>
+<td style="text-align:left"><code>ffmpeg.exe</code> の配置フォルダをWindowsの環境変数 <code>PATH</code> に追加し、アプリを再起動する。</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>URLを入力しても開始前にエラーになる</strong></td>
+<td style="text-align:left">空欄、YouTube以外のURL、またはプレイリスト（<code>list=</code> を含むURL）が指定されている</td>
+<td style="text-align:left"><code>https://www.youtube.com/watch?v=...</code> または <code>https://youtu.be/...</code> 形式の単一動画URLを指定する。</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>取得または変換の途中で <code>ERROR</code> になる</strong></td>
+<td style="text-align:left">動画の非公開・地域制限、ネットワーク切断、保存先の容量・権限不足、またはYouTube仕様変更</td>
+<td style="text-align:left">自動展開された「詳細ログ」を確認する。ブラウザで動画が再生できるか、保存先に空き容量があるかを確認し、必要に応じて仮想環境内の <code>yt-dlp</code> 更新を検討する。</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong><code>settings.json</code> の設定が初期化された</strong></td>
+<td style="text-align:left">JSONファイルの手動編集ミスや不正な値が検出された</td>
+<td style="text-align:left">不正値検出時は安全のため既定値（<code>Downloads</code> / <code>192k</code>）へ自動リセットされる。画面上から再度設定を選択する。</td>
+</tr>
+</tbody>
+</table></div>
+<hr />
+<h2 id="6-開発検証コマンドとリリース前手動受入チェックリスト">6. 開発検証コマンドとリリース前手動受入チェックリスト</h2>
+<h3 id="61-開発時の自動テスト静的検査コマンド">6.1 開発時の自動テスト・静的検査コマンド</h3>
+<pre><code class="language-powershell">.\.venv\Scripts\python.exe -m pip install -r requirements-dev.txt
+.\.venv\Scripts\python.exe -m pytest
+.\.venv\Scripts\python.exe -m black --check src tests
+.\.venv\Scripts\python.exe -m ruff check src tests
+.\.venv\Scripts\python.exe -m pyright
+</code></pre>
+<h3 id="62-リリース前の手動受入試験項目">6.2 リリース前の手動受入試験項目</h3>
+<p>自動単体テストでは外部YouTube通信・実FFmpeg変換・GUI描画をモック化しているため、リリース判断時には権利確認済みの短い動画を用いて以下の9項目を手動確認します。</p>
+<ol>
+<li><code>run.ps1</code> からエラーなくGUIが起動し、ステータスが <code>READY</code> になること。</li>
+<li>保存先フォルダと3種類のビットレート（<code>128k</code> / <code>192k</code> / <code>320k</code>）を変更でき、アプリ再起動後も <code>settings.json</code> から復元されること。</li>
+<li>有効な単一動画URLからMP3ファイルが生成され、音声プレイヤーで正常に再生できること（<code>FR-02</code>）。</li>
+<li>ダウンロード・変換中もウィンドウ移動やログ開閉がフリーズせず応答し、2件目の開始ボタンが無効化されていること（<code>FR-07</code>, <code>NFR-02</code>）。</li>
+<li>完了後にURL欄が空に戻り、続けて別のURLを処理できること。</li>
+<li>空URL、YouTube以外のURL、プレイリストURL、無効な保存先を指定した際、開始前に <code>ERROR</code> と理由が表示されること（<code>FR-08</code>）。</li>
+<li>処理中にウィンドウの閉じるボタンを押すと確認ダイアログ（<code>UI-004</code>）が表示され、「いいえ」で処理を継続できること。</li>
+<li>FFmpegをPATHから外した検証環境で起動した際、理由が表示され開始ボタンが無効化されること（<code>FR-10</code>）。</li>
+<li>通信エラー等を発生させた際、詳細ログ内のURLが <code>[URL]</code> にマスクされて表示されること（<code>NFR-07</code>）。</li>
+</ol>
+</article>
+  </main>
+</div>
+</html>

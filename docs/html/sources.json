@@ -1,0 +1,37 @@
+[
+  {
+    "markdown": ".docs/Architecture.md",
+    "html": "Architecture.html",
+    "sha256": "0f9ed9647648643428cc9bcc45544079c6f0251ef0c1805f0c958cf15a1bbf27"
+  },
+  {
+    "markdown": ".docs/ExternalIntegrations.md",
+    "html": "ExternalIntegrations.html",
+    "sha256": "2086e540523550ff9c49db23854189a8e6898f40b6de16709425b4f747b514d1"
+  },
+  {
+    "markdown": ".docs/Glossary.md",
+    "html": "Glossary.html",
+    "sha256": "b51779d05ccbc803b7008223401dfffac800129b7860bd13a8b4ff3b832fe23e"
+  },
+  {
+    "markdown": ".docs/ProjectContext.md",
+    "html": "ProjectContext.html",
+    "sha256": "6ee1bbf3967f3aaf0db6ccb3d2903568febc5169bdb609360db9be2603103328"
+  },
+  {
+    "markdown": ".docs/SystemOverview.md",
+    "html": "SystemOverview.html",
+    "sha256": "70a2e6b28427b5b6ee1359c251856b612fc5b3b4824d347349791c495895cadc"
+  },
+  {
+    "markdown": ".docs/UI_design.md",
+    "html": "UI_design.html",
+    "sha256": "8c5cd927731c4b3254c93967d94ef26bb745a70ec3f00ba1be1ce8e66b6ff997"
+  },
+  {
+    "markdown": "docs/md/README.md",
+    "html": "README.html",
+    "sha256": "c5ca0b818e25dd2f6000d534cf6571573bd387cdad7581e19f2cc33bb568472e"
+  }
+]

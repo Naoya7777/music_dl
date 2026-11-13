@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="ja">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>外部サービス・API連携設計（Music DL） | music_dl</title>
+<link rel="stylesheet" href="theme.css">
+<script src="view.js" defer></script>
+<a class="skip" href="#main">本文へ移動</a>
+<div class="layout">
+  <aside><a class="brand" href="index.html"><span aria-hidden="true">◇</span>music_dl</a>
+  <nav aria-label="文書"><a href="Architecture.html">詳細設計：アーキテクチャ（Music DL）</a><a href="ExternalIntegrations.html" aria-current=page>外部サービス・API連携設計（Music DL）</a><a href="Glossary.html">用語集（Music DL）</a><a href="ProjectContext.html">要件定義（Music DL）</a><a href="SystemOverview.html">システム概要（Music DL）</a><a href="UI_design.html">UI設計・操作ガイド（Music DL）</a><a href="README.html">MP3を取得する流れ</a></nav></aside>
+  <main id="main" tabindex="-1">
+    <header><a href="index.html">ドキュメント</a><a href="../../.docs/ExternalIntegrations.md">Markdown正本</a></header>
+    <details class="card"><summary>章一覧</summary><ul><li><a href="#1-%E5%A4%96%E9%83%A8%E9%80%A3%E6%90%BA%E5%85%88%E3%81%AE%E4%B8%80%E8%A6%A7%E3%81%A8%E5%A2%83%E7%95%8C">1. 外部連携先の一覧と境界</a></li><li><a href="#2-yt-dlp-sdk-%E3%82%AA%E3%83%97%E3%82%B7%E3%83%A7%E3%83%B3%E5%A5%91%E7%B4%84%E3%81%A8%E5%A4%89%E6%8F%9B%E3%83%95%E3%83%AD%E3%83%BC">2. `yt-dlp` SDK オプション契約と変換フロー</a></li><li><a href="#3-%E3%82%BF%E3%82%A4%E3%83%A0%E3%82%A2%E3%82%A6%E3%83%88%E5%86%8D%E8%A9%A6%E8%A1%8C%E9%9A%9C%E5%AE%B3%E6%99%82%E3%81%AE%E6%8C%99%E5%8B%95">3. タイムアウト・再試行・障害時の挙動</a></li><li><a href="#4-%E3%82%BB%E3%82%AD%E3%83%A5%E3%83%AA%E3%83%86%E3%82%A3%E3%83%97%E3%83%A9%E3%82%A4%E3%83%90%E3%82%B7%E3%83%BC%E4%BF%9D%E8%AD%B7%E3%81%A8%E3%83%86%E3%82%B9%E3%83%88%E5%A2%83%E7%95%8C">4. セキュリティ・プライバシー保護とテスト境界</a></li></ul></details><article><h1 id="外部サービスapi連携設計music-dl">外部サービス・API連携設計（Music DL）</h1>
+<ul>
+<li><strong>Version</strong>: <code>v5.1</code></li>
+<li><strong>Updated</strong>: <code>2026-10-27 JST</code></li>
+<li><strong>Baseline Commit</strong>: <code>29b82cec622c99e14e21dee7886012f0f3d2ab6e</code></li>
+</ul>
+<p>本書は、Music DL（<code>music_dl</code>）が外部サービス（YouTube）、外部SDK・実行バイナリ（<code>yt-dlp</code>, FFmpeg）、およびローカルファイルシステムと連携する際のインターフェース契約、タイムアウト・再試行設定、およびプライバシー・セキュリティ制御を定義します。</p>
+<hr />
+<h2 id="1-外部連携先の一覧と境界">1. 外部連携先の一覧と境界</h2>
+<p>Music DLは独自のバックエンドサーバーや外部データベースを持たず、以下の外部要素と連携して動作します。</p>
+<div class="scroll" role="region" aria-label="表" tabindex="0"><table>
+<thead>
+<tr>
+<th style="text-align:left">連携先</th>
+<th style="text-align:left">種別</th>
+<th style="text-align:left">役割・通信方式</th>
+<th style="text-align:left">認証・秘密情報の扱い</th>
+<th style="text-align:left">実装モジュール</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left"><strong>YouTube</strong></td>
+<td style="text-align:left">外部Webサービス</td>
+<td style="text-align:left">利用者が指定した単一動画URLからのメディア情報・音声ストリーム取得（HTTPS）</td>
+<td style="text-align:left">APIキー、OAuthトークン、ブラウザCookie等の認証情報は一切保持・送信しない</td>
+<td style="text-align:left"><code>src/core/download_service.py</code></td>
+</tr>
+<tr>
+<td style="text-align:left"><strong><code>yt-dlp</code></strong></td>
+<td style="text-align:left">Python SDK (<code>YoutubeDL</code>)</td>
+<td style="text-align:left">YouTubeからのストリーム解析・ダウンロード制御、および後処理（FFmpeg）の呼び出し（<code>requirements.txt</code> 固定版：<code>2026.3.17</code>）</td>
+<td style="text-align:left">なし</td>
+<td style="text-align:left"><code>src/core/download_service.py</code> (<code>_create_downloader</code>, <code>_build_options</code>)</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>FFmpeg</strong></td>
+<td style="text-align:left">外部実行バイナリ (<code>ffmpeg.exe</code>)</td>
+<td style="text-align:left">ダウンロードした音声ストリームのMP3エンコード変換（OSの <code>PATH</code> 経由で実行）</td>
+<td style="text-align:left">なし</td>
+<td style="text-align:left"><code>DownloadService.validate_environment()</code></td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>ローカルファイルシステム</strong></td>
+<td style="text-align:left">OSストレージ</td>
+<td style="text-align:left">設定ファイル（<code>settings.json</code>）のアトミック保存、および変換済みMP3ファイルの出力</td>
+<td style="text-align:left">ユーザー指定パス（ログ出力時はURLマスク対象）</td>
+<td style="text-align:left"><code>src/core/config.py</code>, <code>src/core/validation.py</code></td>
+</tr>
+</tbody>
+</table></div>
+<hr />
+<h2 id="2-yt-dlp-sdk-オプション契約と変換フロー">2. <code>yt-dlp</code> SDK オプション契約と変換フロー</h2>
+<p><code>DownloadService._build_options()</code> が構築し、<code>yt_dlp.YoutubeDL(options)</code> へ渡す設定パラメータの契約は以下のとおりです。</p>
+<div class="scroll" role="region" aria-label="表" tabindex="0"><table>
+<thead>
+<tr>
+<th style="text-align:left">オプションキー</th>
+<th style="text-align:left">設定値</th>
+<th style="text-align:left">設計上の意図・役割</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left"><code>format</code></td>
+<td style="text-align:left"><code>&quot;bestaudio/best&quot;</code></td>
+<td style="text-align:left">利用可能な最も高品質な音声ストリーム（またはフォールバックとして最良フォーマット）を選択する。</td>
+</tr>
+<tr>
+<td style="text-align:left"><code>outtmpl</code></td>
+<td style="text-align:left"><code>str(Path(save_dir) / &quot;%(title)s.%(ext)s&quot;)</code></td>
+<td style="text-align:left">指定された保存先フォルダ配下に、動画タイトルをベースとしたファイル名で出力する。</td>
+</tr>
+<tr>
+<td style="text-align:left"><code>noplaylist</code></td>
+<td style="text-align:left"><code>True</code></td>
+<td style="text-align:left">URL検証に加え、SDK側でもプレイリスト展開を明示的に無効化する。</td>
+</tr>
+<tr>
+<td style="text-align:left"><code>postprocessors</code></td>
+<td style="text-align:left"><code>[{&quot;key&quot;: &quot;FFmpegExtractAudio&quot;, &quot;preferredcodec&quot;: &quot;mp3&quot;, &quot;preferredquality&quot;: bitrate}]</code></td>
+<td style="text-align:left">取得完了後にFFmpegを呼び出し、選択されたビットレート（<code>&quot;128&quot;</code>, <code>&quot;192&quot;</code>, <code>&quot;320&quot;</code>）のMP3へ変換する。</td>
+</tr>
+<tr>
+<td style="text-align:left"><code>progress_hooks</code></td>
+<td style="text-align:left"><code>[self._progress_hook]</code></td>
+<td style="text-align:left">ダウンロード中（<code>downloading</code>）のバイト進捗と、取得完了・変換開始（<code>finished</code> → 進捗 <code>0.95</code>）を捕捉する。</td>
+</tr>
+<tr>
+<td style="text-align:left"><code>socket_timeout</code></td>
+<td style="text-align:left"><code>30</code></td>
+<td style="text-align:left">ソケット通信の無応答タイムアウトを30秒に制限する（<code>NFR-05</code>）。</td>
+</tr>
+<tr>
+<td style="text-align:left"><code>retries</code></td>
+<td style="text-align:left"><code>3</code></td>
+<td style="text-align:left">HTTP通信エラー時の通常リトライ回数を最大3回とする（<code>NFR-05</code>）。</td>
+</tr>
+<tr>
+<td style="text-align:left"><code>fragment_retries</code></td>
+<td style="text-align:left"><code>3</code></td>
+<td style="text-align:left">分割ストリーム（フラグメント）取得失敗時のリトライ回数を最大3回とする（<code>NFR-05</code>）。</td>
+</tr>
+<tr>
+<td style="text-align:left"><code>quiet</code> / <code>no_warnings</code></td>
+<td style="text-align:left"><code>True</code> / <code>True</code></td>
+<td style="text-align:left">標準出力への直接出力を抑制し、GUIの通知キュー（<code>queue.Queue</code>）へメッセージを一元化する。</td>
+</tr>
+</tbody>
+</table></div>
+<hr />
+<h2 id="3-タイムアウト再試行障害時の挙動">3. タイムアウト・再試行・障害時の挙動</h2>
+<ol>
+<li><strong>通信タイムアウトと再試行の範囲</strong>
+<ul>
+<li><code>socket_timeout=30</code>、<code>retries=3</code>、<code>fragment_retries=3</code> は個々のソケット通信およびフラグメント取得に対する設定であり、動画全体のダウンロード完了時間を30秒に制限するものではありません。</li>
+<li>YouTube側のレート制限（HTTP 429）に対する独自のバックオフ待機や、途中キャンセル・レジューム再開機構は持たず、リトライ上限超過時は例外として捕捉しステータスを <code>ERROR</code> へ遷移させます。</li>
+</ul>
+</li>
+<li><strong>ファイル名衝突・一時ファイルの扱い</strong>
+<ul>
+<li>Windows禁止文字の置換、同名ファイル存在時の挙動、および変換失敗時に残る一時ファイル（<code>.part</code> 等）の扱いは <code>yt-dlp</code> の標準動作に委譲しています。</li>
+</ul>
+</li>
+<li><strong>FFmpegの事前・実行時確認</strong>
+<ul>
+<li>アプリ起動時および <code>run_download()</code> 開始時に <code>shutil.which(&quot;ffmpeg&quot;)</code> を実行し、<code>PATH</code> 上にFFmpegが存在しない場合はネットワーク通信を行う前に処理を拒否します（<code>FR-10</code>）。</li>
+</ul>
+</li>
+</ol>
+<hr />
+<h2 id="4-セキュリティプライバシー保護とテスト境界">4. セキュリティ・プライバシー保護とテスト境界</h2>
+<h3 id="41-エラーメッセージのurlマスキングとタイトル無害化">4.1 エラーメッセージのURLマスキングとタイトル無害化</h3>
+<ul>
+<li><strong>URLマスキング（<code>NFR-07</code>）</strong>：<code>yt-dlp</code> やネットワーク層が送出した例外メッセージには入力URLが含まれる場合があるため、<code>DownloadService._safe_error_message()</code> において正規表現 <code>https?://\S+</code> をすべて <strong><code>[URL]</code></strong> に置換し、最大300文字に整形してからGUIログへ渡します。</li>
+<li><strong>動画タイトルのサニタイズ</strong>：完了ログに出力する動画タイトルは <code>_sanitize_title()</code> によって制御文字を除去し、最大100文字に制限します。</li>
+</ul>
+<h3 id="42-自動単体テストと実機確認の境界">4.2 自動単体テストと実機確認の境界</h3>
+<ul>
+<li><code>tests/test_download_service.py</code> では、<code>FakeDownloader</code>（モック）および実行ファイル検索の差し替えを用いて、オプション生成（<code>socket_timeout=30</code>、ビットレート反映等）、バイト数からの進捗計算、エラー時の <code>[URL]</code> マスキング、二重実行拒否、FFmpeg不在検知を外部通信なしで検証しています。</li>
+<li>実際のYouTubeサーバーへの接続、FFmpegによる実MP3ファイル生成、および音声再生確認は、<a href="UI_design.html">UI_design.md</a> 第6.2節の手動受入チェックリストで実施します。</li>
+</ul>
+</article>
+  </main>
+</div>
+</html>

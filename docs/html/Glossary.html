@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="ja">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>用語集（Music DL） | music_dl</title>
+<link rel="stylesheet" href="theme.css">
+<script src="view.js" defer></script>
+<a class="skip" href="#main">本文へ移動</a>
+<div class="layout">
+  <aside><a class="brand" href="index.html"><span aria-hidden="true">◇</span>music_dl</a>
+  <nav aria-label="文書"><a href="Architecture.html">詳細設計：アーキテクチャ（Music DL）</a><a href="ExternalIntegrations.html">外部サービス・API連携設計（Music DL）</a><a href="Glossary.html" aria-current=page>用語集（Music DL）</a><a href="ProjectContext.html">要件定義（Music DL）</a><a href="SystemOverview.html">システム概要（Music DL）</a><a href="UI_design.html">UI設計・操作ガイド（Music DL）</a><a href="README.html">MP3を取得する流れ</a></nav></aside>
+  <main id="main" tabindex="-1">
+    <header><a href="index.html">ドキュメント</a><a href="../../.docs/Glossary.md">Markdown正本</a></header>
+    <details class="card"><summary>章一覧</summary><ul><li><a href="#1-%E3%83%89%E3%83%A1%E3%82%A4%E3%83%B3%E3%82%A2%E3%83%97%E3%83%AA%E3%82%B1%E3%83%BC%E3%82%B7%E3%83%A7%E3%83%B3%E5%9F%BA%E6%9C%AC%E7%94%A8%E8%AA%9E">1. ドメイン・アプリケーション基本用語</a></li><li><a href="#2-%E5%A4%96%E9%83%A8%E3%83%84%E3%83%BC%E3%83%AB%E5%AE%9F%E8%A1%8C%E7%92%B0%E5%A2%83%E7%94%A8%E8%AA%9E">2. 外部ツール・実行環境用語</a></li><li><a href="#3-%E5%86%85%E9%83%A8%E3%82%A2%E3%83%BC%E3%82%AD%E3%83%86%E3%82%AF%E3%83%81%E3%83%A3%E7%94%BB%E9%9D%A2%E7%8A%B6%E6%85%8B%E7%94%A8%E8%AA%9E">3. 内部アーキテクチャ・画面状態用語</a></li></ul></details><article><h1 id="用語集music-dl">用語集（Music DL）</h1>
+<ul>
+<li><strong>Version</strong>: <code>v5.1</code></li>
+<li><strong>Updated</strong>: <code>2026-10-27 JST</code></li>
+<li><strong>Baseline Commit</strong>: <code>29b82cec622c99e14e21dee7886012f0f3d2ab6e</code></li>
+</ul>
+<p>本書は、Music DL（<code>music_dl</code>）のドキュメント、ソースコード、設定ファイル、およびGUI画面で使用される用語・状態・識別子の定義をまとめた正本です。</p>
+<hr />
+<h2 id="1-ドメインアプリケーション基本用語">1. ドメイン・アプリケーション基本用語</h2>
+<div class="scroll" role="region" aria-label="表" tabindex="0"><table>
+<thead>
+<tr>
+<th style="text-align:left">用語</th>
+<th style="text-align:left">コード・設定上の識別子</th>
+<th style="text-align:left">定義・説明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left"><strong>Music DL</strong></td>
+<td style="text-align:left"><code>music_dl</code></td>
+<td style="text-align:left">YouTubeの単一動画から音声を取得し、MP3ファイルとして保存するWindowsデスクトップアプリケーション。</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>単一動画URL</strong></td>
+<td style="text-align:left"><code>url</code></td>
+<td style="text-align:left">プレイリスト指定（<code>list</code> クエリパラメータ）を含まない、1本のYouTube動画を指すHTTP/HTTPS URL。</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>保存先フォルダ</strong></td>
+<td style="text-align:left"><code>save_dir</code></td>
+<td style="text-align:left">変換後のMP3ファイルを出力するローカルディレクトリ。既定値は <code>&lt;ユーザーホーム&gt;\Downloads</code>。</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>音声ビットレート（音質）</strong></td>
+<td style="text-align:left"><code>bitrate</code></td>
+<td style="text-align:left">MP3変換時の1秒あたりの音声データ量（単位：kbps）。<code>128</code>、<code>192</code>（既定値）、<code>320</code> の3種類から選択する。画面上は <code>128k</code> / <code>192k</code> / <code>320k</code> と表記される。</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>設定ファイル</strong></td>
+<td style="text-align:left"><code>settings.json</code></td>
+<td style="text-align:left"><code>save_dir</code> と <code>bitrate</code> をJSON形式で永続化するファイル。プロジェクトルートに保存される。</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>アトミック置換保存</strong></td>
+<td style="text-align:left"><code>os.replace</code></td>
+<td style="text-align:left">設定保存時に一時ファイル（<code>settings.json.tmp</code>）へ書き込み・同期した後に本番ファイルと入れ替えることで、保存途中のファイル破損を防ぐ手法。</td>
+</tr>
+</tbody>
+</table></div>
+<hr />
+<h2 id="2-外部ツール実行環境用語">2. 外部ツール・実行環境用語</h2>
+<div class="scroll" role="region" aria-label="表" tabindex="0"><table>
+<thead>
+<tr>
+<th style="text-align:left">用語</th>
+<th style="text-align:left">識別子 / コマンド</th>
+<th style="text-align:left">定義・説明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left"><strong><code>yt-dlp</code></strong></td>
+<td style="text-align:left"><code>yt_dlp</code> / <code>YoutubeDL</code></td>
+<td style="text-align:left">YouTubeから動画情報と音声ストリームを取得し、後処理としてFFmpegを呼び出すPythonライブラリ。</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>FFmpeg</strong></td>
+<td style="text-align:left"><code>ffmpeg</code></td>
+<td style="text-align:left">取得した音声ストリームをMP3フォーマットへエンコード（変換）する外部コマンドラインプログラム。</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>環境変数 PATH</strong></td>
+<td style="text-align:left"><code>PATH</code></td>
+<td style="text-align:left">Windowsが <code>ffmpeg</code> や <code>py</code> などの実行ファイルを探すディレクトリの一覧。</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>Python仮想環境</strong></td>
+<td style="text-align:left"><code>.venv</code></td>
+<td style="text-align:left">プロジェクト固有のPythonインタープリタと依存パッケージ（<code>customtkinter</code>, <code>yt-dlp</code>）をシステム全体から分離して保持するディレクトリ。</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>起動スクリプト</strong></td>
+<td style="text-align:left"><code>run.ps1</code></td>
+<td style="text-align:left">Python 3.14とFFmpegの確認、<code>.venv</code> の構築、パッケージ導入、およびアプリ起動を一括実行するPowerShellスクリプト。</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>DRM</strong></td>
+<td style="text-align:left">Digital Rights Management</td>
+<td style="text-align:left">デジタル著作権管理。コンテンツの複製や視聴を制限する技術的保護手段。Music DLはDRMの回避を行わない。</td>
+</tr>
+</tbody>
+</table></div>
+<hr />
+<h2 id="3-内部アーキテクチャ画面状態用語">3. 内部アーキテクチャ・画面状態用語</h2>
+<div class="scroll" role="region" aria-label="表" tabindex="0"><table>
+<thead>
+<tr>
+<th style="text-align:left">用語 / 状態名</th>
+<th style="text-align:left">関連クラス・箇所</th>
+<th style="text-align:left">定義・説明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left"><strong><code>ModernUI</code></strong></td>
+<td style="text-align:left"><code>src/ui/app_window.py</code></td>
+<td style="text-align:left">CustomTkinterを用いてメインウィンドウ、入力欄、進捗バー、詳細ログパネルを構築・制御するGUIクラス。</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong><code>DownloadService</code></strong></td>
+<td style="text-align:left"><code>src/core/download_service.py</code></td>
+<td style="text-align:left">環境検証、<code>yt-dlp</code> オプション生成、ワーカースレッド管理、単一ジョブ排他制御を担うサービスクラス。</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>ワーカースレッド</strong></td>
+<td style="text-align:left"><code>music-dl-worker</code></td>
+<td style="text-align:left">GUIのフリーズを防ぐため、バックグラウンドで音声取得とMP3変換を実行するデーモンスレッド。</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>UI通知キュー</strong></td>
+<td style="text-align:left"><code>_ui_queue</code> (<code>queue.Queue</code>)</td>
+<td style="text-align:left">ワーカースレッドからメインGUIスレッドへ進捗・ログ・完了イベントを安全に受け渡すスレッド間キュー。50ms周期でポーリングされる。</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong><code>READY</code></strong></td>
+<td style="text-align:left">UIステータスバッジ</td>
+<td style="text-align:left">入力待ちの初期待機状態。</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong><code>WORKING</code></strong></td>
+<td style="text-align:left">UIステータスバッジ</td>
+<td style="text-align:left">音声ダウンロード中（進捗 <code>0.00</code>〜<code>0.94</code>）またはMP3変換中（進捗 <code>0.95</code>）の実行状態。この間、新規操作はロックされる。</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong><code>DONE</code></strong></td>
+<td style="text-align:left">UIステータスバッジ</td>
+<td style="text-align:left">MP3の変換・保存が正常に完了した状態（進捗 <code>1.00</code>）。</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong><code>CHECK</code></strong></td>
+<td style="text-align:left">UIステータスバッジ</td>
+<td style="text-align:left">クリップボードが空であるなど、利用者の確認・再操作を促す注意状態。</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong><code>ERROR</code></strong></td>
+<td style="text-align:left">UIステータスバッジ</td>
+<td style="text-align:left">入力検証エラー、FFmpeg未検出、設定保存失敗、または取得・変換失敗を示すエラー状態。</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>URLマスキング</strong></td>
+<td style="text-align:left"><code>_safe_error_message()</code></td>
+<td style="text-align:left">プライバシー保護のため、例外メッセージ内に含まれる <code>http://</code> / <code>https://</code> URLを <code>[URL]</code> という文字列に置換する処理。</td>
+</tr>
+</tbody>
+</table></div>
+</article>
+  </main>
+</div>
+</html>

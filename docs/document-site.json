@@ -1,0 +1,13 @@
+{
+  "project": "music_dl",
+  "overview": "docs/md/README.md",
+  "sources": [
+    ".docs/Architecture.md",
+    ".docs/ExternalIntegrations.md",
+    ".docs/Glossary.md",
+    ".docs/ProjectContext.md",
+    ".docs/SystemOverview.md",
+    ".docs/UI_design.md",
+    "docs/md/README.md"
+  ]
+}
