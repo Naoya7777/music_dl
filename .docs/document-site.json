@@ -1,0 +1,23 @@
+{
+  "project": "music_dl",
+  "overview": ".docs/md/README.md",
+  "sources": [
+    ".docs/Architecture.md",
+    ".docs/ExternalIntegrations.md",
+    ".docs/Glossary.md",
+    ".docs/ProjectContext.md",
+    ".docs/SystemOverview.md",
+    ".docs/UI_design.md",
+    ".docs/md/README.md"
+  ],
+  "exclusions": {
+    ".docs/README.md": "既存の固定リンクと証跡を案内する互換索引。",
+    ".docs/md/DetailedDesign.md": "標準文書はビジュアルガイドから直接参照。ここでは互換HTMLの既存技術資料を生成する。",
+    ".docs/md/ExternalIntegrations.md": "標準文書はビジュアルガイドから直接参照。ここでは互換HTMLの既存技術資料を生成する。",
+    ".docs/md/Glossary.md": "標準文書はビジュアルガイドから直接参照。ここでは互換HTMLの既存技術資料を生成する。",
+    ".docs/md/Requirements.md": "標準文書はビジュアルガイドから直接参照。ここでは互換HTMLの既存技術資料を生成する。",
+    ".docs/md/SystemOverview.md": "標準文書はビジュアルガイドから直接参照。ここでは互換HTMLの既存技術資料を生成する。",
+    ".docs/md/UIDesign.md": "標準文書はビジュアルガイドから直接参照。ここでは互換HTMLの既存技術資料を生成する。"
+  },
+  "diagrams": true
+}

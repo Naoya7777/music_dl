@@ -1,5 +1,9 @@
 # 外部サービス・API連携設計（Music DL）
 
+- **Version**: `v5.1`
+- **Updated**: `2026-10-27 JST`
+- **Baseline Commit**: `29b82cec622c99e14e21dee7886012f0f3d2ab6e`
+
 本書は、Music DL（`music_dl`）が外部サービス（YouTube）、外部SDK・実行バイナリ（`yt-dlp`, FFmpeg）、およびローカルファイルシステムと連携する際のインターフェース契約、タイムアウト・再試行設定、およびプライバシー・セキュリティ制御を定義します。
 
 ---
