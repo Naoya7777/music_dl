@@ -1,5 +1,9 @@
 # 要件定義（Music DL）
 
+- **Version**: `v5.1`
+- **Updated**: `2026-10-27 JST`
+- **Baseline Commit**: `29b82cec622c99e14e21dee7886012f0f3d2ab6e`
+
 本書は、Music DL（`music_dl`）が満たすべき機能要件、非機能要件、利用前提、受入条件、および現行実装との差異・トレーサビリティを定義します。
 
 ---
