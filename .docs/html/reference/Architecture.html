@@ -1,0 +1,252 @@
+<!doctype html>
+<html lang="ja">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; base-uri 'none'; form-action 'none'">
+<title>詳細設計：アーキテクチャ（Music DL） | music_dl</title>
+<link rel="stylesheet" href="theme.css">
+<script src="view.js" defer></script>
+<script src="diagrams.js" defer></script>
+<a class="skip" href="#main">本文へ移動</a>
+<div class="layout">
+  <aside><a class="brand" href="index.html"><span aria-hidden="true">◇</span>music_dl</a>
+  <nav aria-label="文書"><a href="Architecture.html" aria-current=page>詳細設計：アーキテクチャ（Music DL）</a><a href="ExternalIntegrations.html">外部サービス・API連携設計（Music DL）</a><a href="Glossary.html">用語集（Music DL）</a><a href="ProjectContext.html">要件定義（Music DL）</a><a href="SystemOverview.html">システム概要（Music DL）</a><a href="UI_design.html">UI設計・操作ガイド（Music DL）</a><a href="README.html">music_dl 文書ガイド</a></nav></aside>
+  <main id="main" tabindex="-1">
+    <header><a href="index.html">ドキュメント</a><a href="../../Architecture.md">Markdown正本</a></header>
+    <details class="card"><summary>章一覧</summary><ul><li><a href="#1-%E3%82%B7%E3%82%B9%E3%83%86%E3%83%A0%E5%A2%83%E7%95%8C%E3%81%A8%E3%83%AC%E3%82%A4%E3%83%A4%E3%83%BC%E6%A7%8B%E6%88%90">1. システム境界とレイヤー構成</a></li><li><a href="#2-%E8%B5%B7%E5%8B%95%E8%A8%AD%E5%AE%9A%E8%AA%AD%E8%BE%BC%E8%A8%AD%E5%AE%9A%E5%A4%89%E6%9B%B4%E3%81%AE%E3%83%95%E3%83%AD%E3%83%BC">2. 起動・設定読込・設定変更のフロー</a></li><li><a href="#3-%E5%8F%96%E5%BE%97%E5%A4%89%E6%8F%9B%E3%83%95%E3%83%AD%E3%83%BC%E3%81%A8%E9%9D%9E%E5%90%8C%E6%9C%9F%E3%82%B9%E3%83%AC%E3%83%83%E3%83%89%E5%88%B6%E5%BE%A1">3. 取得・変換フローと非同期スレッド制御</a></li><li><a href="#4-%E3%83%87%E3%83%BC%E3%82%BF%E6%A7%8B%E9%80%A0%E3%82%B9%E3%82%AD%E3%83%BC%E3%83%9E%E9%80%B2%E6%8D%97%E8%A8%88%E7%AE%97%E5%BC%8F">4. データ構造・スキーマ・進捗計算式</a></li><li><a href="#5-%E5%85%A5%E5%8A%9B%E6%A4%9C%E8%A8%BC%E4%BE%8B%E5%A4%96%E5%87%A6%E7%90%86%E3%82%BB%E3%82%AD%E3%83%A5%E3%83%AA%E3%83%86%E3%82%A3%E8%A8%AD%E8%A8%88">5. 入力検証・例外処理・セキュリティ設計</a></li></ul></details><article><h1 id="詳細設計アーキテクチャmusic-dl">詳細設計：アーキテクチャ（Music DL）</h1>
+<ul>
+<li><strong>Version</strong>: <code>v5.1</code></li>
+<li><strong>Updated</strong>: <code>2026-10-27 JST</code></li>
+<li><strong>Baseline Commit</strong>: <code>29b82cec622c99e14e21dee7886012f0f3d2ab6e</code></li>
+</ul>
+<p>本書は、Music DL（<code>music_dl</code>）のモジュール構成、レイヤー間の責務と依存方向、起動・設定・ダウンロード処理の内部フロー、データスキーマ、進捗計算ロジック、および例外・セキュリティ制御を定義します。</p>
+<hr />
+<h2 id="1-システム境界とレイヤー構成">1. システム境界とレイヤー構成</h2>
+<h3 id="11-設計原則">1.1 設計原則</h3>
+<ol>
+<li><strong>プレゼンテーション層とコア層の分離</strong>：GUI（<code>src/ui</code>）には <code>yt-dlp</code> やFFmpeg固有の呼び出しロジックを持たせず、すべての取得・変換・設定・検証処理をコア層（<code>src/core</code>）へ委譲します。</li>
+<li><strong>スレッド安全性の確保（UI Queueパターン）</strong>：CustomTkinterのウィジェットはスレッドセーフではないため、バックグラウンドのワーカースレッドはUI部品を一切直接操作せず、<code>queue.Queue</code> にイベントを積み、GUIスレッド側が50ミリ秒周期でポーリングして描画を更新します。</li>
+<li><strong>単一実行状態の排他管理</strong>：実行中フラグ（<code>_is_running</code>）の所有権を <code>DownloadService</code> に一元化し、<code>threading.Lock</code> によって二重起動を確実に防止します。</li>
+<li><strong>不変（Immutable）設定とアトミック保存</strong>：設定データ <code>AppConfig</code> は不変データクラスとして扱い、ファイル保存時は一時ファイルへの書き込みと <code>os.replace</code> によって破損を防ぎます。</li>
+</ol>
+<h3 id="12-モジュール構成と依存関係">1.2 モジュール構成と依存関係</h3>
+<p>依存方向は常に <strong>「起動境界（<code>run.ps1</code> / <code>src/main.py</code>） → プレゼンテーション層（<code>src/ui</code>） → コア層（<code>src/core</code>）」</strong> の単一方向です。</p>
+<div class="scroll" role="region" aria-label="表" tabindex="0"><table>
+<thead>
+<tr>
+<th style="text-align:left">層 / ファイル</th>
+<th style="text-align:left">主要クラス・関数</th>
+<th style="text-align:left">責務</th>
+<th style="text-align:left">依存先</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left"><strong>起動境界</strong><br/><code>run.ps1</code></td>
+<td style="text-align:left">PowerShellスクリプト</td>
+<td style="text-align:left"><code>py</code>（Python 3.14）と <code>ffmpeg</code> のPATH確認、<code>.venv</code> 作成、依存導入、<code>python -m src.main</code> の起動</td>
+<td style="text-align:left">OS環境、<code>requirements.txt</code></td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>起動境界</strong><br/><code>src/main.py</code></td>
+<td style="text-align:left"><code>main()</code></td>
+<td style="text-align:left"><code>ModernUI</code> インスタンスの生成とメインイベントループの開始</td>
+<td style="text-align:left"><code>src/ui/app_window.py</code></td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>プレゼンテーション層</strong><br/><code>src/ui/app_window.py</code></td>
+<td style="text-align:left"><code>ModernUI</code></td>
+<td style="text-align:left">ウィンドウ構築、入力受付、UI通知キュー（50ms周期）の処理、状態表示・進捗バー・詳細ログの更新</td>
+<td style="text-align:left"><code>src/ui/theme.py</code>, <code>src/core/*</code></td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>プレゼンテーション層</strong><br/><code>src/ui/theme.py</code></td>
+<td style="text-align:left"><code>Theme</code></td>
+<td style="text-align:left">ダークテーマのカラーパレット、フォント、余白・角丸定数の一元管理</td>
+<td style="text-align:left">なし</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>コア層</strong><br/><code>src/core/download_service.py</code></td>
+<td style="text-align:left"><code>DownloadService</code></td>
+<td style="text-align:left">FFmpeg存在確認、<code>yt-dlp</code> オプション構築、ワーカースレッド制御、進捗計算、エラーURLマスク</td>
+<td style="text-align:left"><code>yt_dlp</code>, <code>shutil</code>, <code>threading</code></td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>コア層</strong><br/><code>src/core/config.py</code></td>
+<td style="text-align:left"><code>AppConfig</code>, <code>ConfigManager</code></td>
+<td style="text-align:left">設定値の型・許可値検証、<code>settings.json</code> の読込とアトミック置換保存、異常時の既定値フォールバック</td>
+<td style="text-align:left">標準ライブラリ（<code>json</code>, <code>os</code>, <code>pathlib</code>）</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>コア層</strong><br/><code>src/core/validation.py</code></td>
+<td style="text-align:left"><code>validate_youtube_url()</code>, <code>validate_output_directory()</code></td>
+<td style="text-align:left">URL形式・プレイリスト除外の検証、保存先ディレクトリの存在・書込権限（<code>os.W_OK</code>）検証</td>
+<td style="text-align:left">標準ライブラリ（<code>urllib.parse</code>, <code>os</code>, <code>pathlib</code>）</td>
+</tr>
+</tbody>
+</table></div>
+<hr />
+<h2 id="2-起動設定読込設定変更のフロー">2. 起動・設定読込・設定変更のフロー</h2>
+<h3 id="21-起動と初期設定ロード">2.1 起動と初期設定ロード</h3>
+<ol>
+<li><code>run.ps1</code> が <code>py</code> コマンドと <code>ffmpeg</code> コマンドの存在を確認し、未作成であれば <code>.venv</code> を構築して <code>src.main</code> を起動します。</li>
+<li><code>ModernUI</code> の初期化時に <code>ConfigManager.load()</code> が呼び出され、カレントディレクトリの <code>settings.json</code> を読み込みます。</li>
+<li><code>settings.json</code> が存在しない場合、またはJSON構文エラー・型不正・許可外のビットレート値が検出された場合は、設定全体を既定値（保存先：<code>&lt;ユーザーホーム&gt;\Downloads</code>、ビットレート：<code>192</code>）へフォールバックし、画面内ログへ警告を記録します。</li>
+<li><code>DownloadService.validate_environment()</code> が <code>shutil.which(&quot;ffmpeg&quot;)</code> でFFmpegの存在を確認します。見つからない場合はステータスを <code>ERROR</code> とし、ダウンロード開始ボタンを無効化します。</li>
+</ol>
+<h3 id="22-設定変更とアトミック保存">2.2 設定変更とアトミック保存</h3>
+<ol>
+<li>利用者がGUI上で保存先フォルダまたは音声ビットレート（<code>128</code> / <code>192</code> / <code>320</code>）を変更します。</li>
+<li><code>AppConfig.with_save_dir()</code> または <code>with_bitrate()</code> が検証済みの新しい不変 <code>AppConfig</code> インスタンスを生成します。</li>
+<li><code>ConfigManager.save()</code> が以下の手順でアトミック保存を実行します。
+<ul>
+<li>UTF-8エンコーディングで一時ファイル <code>settings.json.tmp</code> にJSONを書き出す。</li>
+<li><code>flush()</code> および <code>os.fsync()</code> によりディスクへの書き込みを確定させる。</li>
+<li><code>os.replace(&quot;settings.json.tmp&quot;, &quot;settings.json&quot;)</code> で既存ファイルを原子的に置き換える。</li>
+</ul>
+</li>
+<li>I/Oエラー等で保存に失敗した場合は、残存する一時ファイルを削除した上で <code>ConfigurationError</code> を送出し、画面上の設定表示を変更前の状態に維持します。</li>
+</ol>
+<hr />
+<h2 id="3-取得変換フローと非同期スレッド制御">3. 取得・変換フローと非同期スレッド制御</h2>
+<figure class="card diagram"><figcaption>構成・処理図</figcaption><button type="button" aria-pressed="false" hidden>図を拡大</button><div class="diagram-viewport scroll" role="region" aria-label="図の表示領域" tabindex="0"></div><p role="status"></p><details><summary>Mermaidの記述</summary><pre><code>sequenceDiagram
+    actor User as 利用者
+    participant UI as ModernUI (GUI Thread)
+    participant Queue as UI Queue (queue.Queue)
+    participant Svc as DownloadService
+    participant Worker as Worker Thread (music-dl-worker)
+    participant YtDlp as yt-dlp / FFmpeg
+
+    User-&gt;&gt;UI: 「MP3をダウンロード」押下 (または Enter)
+    UI-&gt;&gt;UI: URL・保存先の事前検証
+    UI-&gt;&gt;Svc: run_download(url, save_dir, bitrate)
+    Svc-&gt;&gt;Svc: URL・保存先・FFmpeg再検証 &amp; Lock下で _is_running 確認
+    Svc-&gt;&gt;Worker: デーモンスレッド起動 (_is_running = True)
+    UI-&gt;&gt;UI: 入力欄・ボタンを無効化 (状態: WORKING)
+    loop 音声取得中
+        Worker-&gt;&gt;YtDlp: extract_info(url, download=True)
+        YtDlp--&gt;&gt;Worker: progress_hook (status=&quot;downloading&quot;)
+        Worker-&gt;&gt;Queue: 進捗通知 (0.00 〜 0.94)
+    end
+    YtDlp--&gt;&gt;Worker: progress_hook (status=&quot;finished&quot;)
+    Worker-&gt;&gt;Queue: 進捗通知 (0.95, &quot;MP3へ変換中...&quot;)
+    YtDlp-&gt;&gt;YtDlp: FFmpegExtractAudio (MP3変換)
+    YtDlp--&gt;&gt;Worker: 変換完了 (info_dict)
+    Worker-&gt;&gt;Queue: 成功ログ &amp; 完了通知 (success=True)
+    Worker-&gt;&gt;Svc: finally: _is_running = False
+    Queue--&gt;&gt;UI: _drain_ui_queue() (50ms周期)
+    UI-&gt;&gt;UI: 進捗 1.0・状態 DONE・URLクリア・操作再有効化
+</code></pre></details></figure><h3 id="スレッド制御の要点">スレッド制御の要点</h3>
+<ul>
+<li><strong>デーモンスレッドの採用</strong>：ワーカースレッド（<code>music-dl-worker</code>）は <code>daemon=True</code> として起動されます。処理中に利用者がウィンドウ終了確認ダイアログで強制終了（「はい」）を選択した場合、スレッドの完了や未完成ファイルの削除は保証されません。</li>
+<li><strong>コールバック境界</strong>：<code>DownloadService</code> は <code>on_progress(float, str)</code>、<code>on_log(str, str)</code>、<code>on_finish(bool, str)</code> の3種のコールバックを受け取ります。<code>ModernUI</code> はこれらを <code>_post_ui()</code> でラップして <code>queue.Queue</code> に格納し、メインスレッドの <code>after(50, _drain_ui_queue)</code> で安全に処理します。</li>
+</ul>
+<hr />
+<h2 id="4-データ構造スキーマ進捗計算式">4. データ構造・スキーマ・進捗計算式</h2>
+<h3 id="41-appconfig-と-settingsjson-スキーマ">4.1 <code>AppConfig</code> と <code>settings.json</code> スキーマ</h3>
+<p><code>settings.json</code> はプロジェクトルート（作業ディレクトリ）に保存されるUTF-8のJSONオブジェクトです。</p>
+<pre><code class="language-json">{
+  &quot;save_dir&quot;: &quot;C:\\Users\\username\\Downloads&quot;,
+  &quot;bitrate&quot;: &quot;192&quot;
+}
+</code></pre>
+<div class="scroll" role="region" aria-label="表" tabindex="0"><table>
+<thead>
+<tr>
+<th style="text-align:left">フィールド名</th>
+<th style="text-align:left">型</th>
+<th style="text-align:left">必須/任意</th>
+<th style="text-align:left">許可値・制約</th>
+<th style="text-align:left">デフォルト値</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left"><code>save_dir</code></td>
+<td style="text-align:left"><code>str</code></td>
+<td style="text-align:left">任意</td>
+<td style="text-align:left">空白文字のみは不可。先頭の <code>~</code> はユーザーホームへ展開される。</td>
+<td style="text-align:left"><code>&lt;ユーザーホーム&gt;\Downloads</code></td>
+</tr>
+<tr>
+<td style="text-align:left"><code>bitrate</code></td>
+<td style="text-align:left"><code>str</code></td>
+<td style="text-align:left">任意</td>
+<td style="text-align:left"><code>&quot;128&quot;</code>, <code>&quot;192&quot;</code>, <code>&quot;320&quot;</code> のいずれか（数値型 <code>192</code> 等は不可）。</td>
+<td style="text-align:left"><code>&quot;192&quot;</code></td>
+</tr>
+</tbody>
+</table></div>
+<p>※ 未知のキーが含まれている場合は無視されます。型不正や許可外の値が含まれる場合は設定全体がデフォルト値へリセットされます。</p>
+<h3 id="42-進捗率progressの計算式">4.2 進捗率（Progress）の計算式</h3>
+<p>音声取得段階の進捗と、その後のFFmpegによるMP3変換段階を区別するため、画面上の進捗率 $P \in [0.0, 1.0]$ は以下のように定義されています。</p>
+<ol>
+<li><strong>音声ダウンロード中（<code>status == &quot;downloading&quot;</code>）</strong>：
+取得済みバイト数を $D$（<code>downloaded_bytes</code>）、総バイト数または推定総バイト数を $T$（<code>total_bytes</code> または <code>total_bytes_estimate</code>）とするとき、$T &gt; 0$ ならば次式で計算します。
+$$P = \max\left(0.0, \min\left(\frac{D}{T}, 0.94\right)\right)$$
+バイト数が取得できない場合は、パーセント文字列（<code>_percent_str</code>）から数値を抽出して100で割り、同様に $[0.0, 0.94]$ にクリップします。</li>
+<li><strong>音声取得完了・MP3変換中（<code>status == &quot;finished&quot;</code>）</strong>：
+$$P = 0.95$$</li>
+<li><strong>全処理完了時（FFmpeg変換成功後）</strong>：
+$$P = 1.00$$</li>
+</ol>
+<hr />
+<h2 id="5-入力検証例外処理セキュリティ設計">5. 入力検証・例外処理・セキュリティ設計</h2>
+<h3 id="51-入力検証ロジックsrccorevalidationpy">5.1 入力検証ロジック（<code>src/core/validation.py</code>）</h3>
+<ul>
+<li><strong>URL検証（<code>validate_youtube_url</code>）</strong>：
+<ol>
+<li>前後の空白を除去し、空文字列を拒否する。</li>
+<li>スキームが <code>http</code> または <code>https</code> であり、ホスト名が許可リスト（<code>youtube.com</code>, <code>www.youtube.com</code>, <code>m.youtube.com</code>, <code>music.youtube.com</code>, <code>youtu.be</code>, <code>www.youtu.be</code>）に含まれることを確認する。</li>
+<li>クエリパラメータに <code>list</code> が含まれる場合はプレイリストとみなして拒否する。</li>
+<li>パスが <code>/watch</code> の場合は非空の <code>v</code> クエリパラメータを必須とする（それ以外のパスでは非空パスであれば通過させる）。</li>
+</ol>
+</li>
+<li><strong>保存先検証（<code>validate_output_directory</code>）</strong>：
+<ol>
+<li>空文字列や空白のみの文字列を拒否する（有効なパス内の空白文字は保持する）。</li>
+<li><code>expanduser()</code> 展開後、パスが存在し、ディレクトリであり、かつ <code>os.access(path, os.W_OK)</code> で書き込み可能であることを確認する。</li>
+</ol>
+</li>
+</ul>
+<h3 id="52-例外分類とプライバシー保護urlマスキング">5.2 例外分類とプライバシー保護（URLマスキング）</h3>
+<div class="scroll" role="region" aria-label="表" tabindex="0"><table>
+<thead>
+<tr>
+<th style="text-align:left">例外・エラー事象</th>
+<th style="text-align:left">送出クラス / 検知箇所</th>
+<th style="text-align:left">アプリケーションの挙動</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">URLまたは保存先の不正</td>
+<td style="text-align:left"><code>InputValidationError</code></td>
+<td style="text-align:left">ワーカースレッドを起動せず、ステータスを <code>ERROR</code> にして理由を表示する。</td>
+</tr>
+<tr>
+<td style="text-align:left">設定ファイルの保存失敗</td>
+<td style="text-align:left"><code>ConfigurationError</code></td>
+<td style="text-align:left">一時ファイルを削除し、既存設定を維持したままエラーを表示する。</td>
+</tr>
+<tr>
+<td style="text-align:left">FFmpeg未検出</td>
+<td style="text-align:left"><code>RuntimeError</code> / 起動時検査</td>
+<td style="text-align:left">起動時は開始ボタンを無効化。開始時検査で判明した場合は処理を中止し通知する。</td>
+</tr>
+<tr>
+<td style="text-align:left"><code>yt-dlp</code> / FFmpeg 実行時例外</td>
+<td style="text-align:left"><code>Exception</code>（ワーカー内捕捉）</td>
+<td style="text-align:left"><code>_safe_error_message()</code> によりエラー文中の <code>http://...</code> / <code>https://...</code> を <strong><code>[URL]</code></strong> に置換し、空白を正規化した最大300文字のメッセージを詳細ログへ出力する。</td>
+</tr>
+<tr>
+<td style="text-align:left">動画タイトルのログ出力</td>
+<td style="text-align:left"><code>_sanitize_title()</code></td>
+<td style="text-align:left">制御文字を除去した表示可能文字のみ・最大100文字に切り詰めてから画面ログへ出力する。</td>
+</tr>
+</tbody>
+</table></div>
+</article>
+  </main>
+</div>
+</html>

@@ -1,5 +1,10 @@
 # Music DL ドキュメント索引
 
+<<<<<<< HEAD
+=======
+現行の説明は[標準7文書](md/README.md)と[ビジュアルガイド](html/index.html)を参照してください。以下は既存の技術仕様、保護された参照、監査記録にアクセスするための索引です。
+
+>>>>>>> 6f8da184fc784dda6346ede32062ec90691950e2
 - **Version**: `v5.1`
 - **Updated**: `2026-10-27 JST`
 - **Baseline Commit**: `29b82cec622c99e14e21dee7886012f0f3d2ab6e`
