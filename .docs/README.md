@@ -48,3 +48,9 @@
 - [.agents/MasterPrompt.md](../.agents/MasterPrompt.md)：共通ガバナンス・品質基準
 - [.codex/ProjectStatus.md](../.codex/ProjectStatus.md)：プロジェクトの現在地・検証記録
 - [README.md](../README.md)：リポジトリルートのクイックスタート案内
+
+## ChatGPTとCodexのGitHubハンドオフ
+
+- **ChatGPT → Codex**。既存のGitHub Issue/PRに目標と背景、対象repo・ブランチ・基準HEAD、変更範囲、優先順位、受入・レビュー・停止条件、認可済み範囲を記録する。Codexチャットでは目標1文、恒久URL、優先順位、最初の作業、停止条件を伝える。
+- **Codex → ChatGPT**。同じIssue/PRに変更SHA、検証結果、CIと独立レビューの実績、未確認事項、必要なHuman判断を残し、検証証拠はProjectのGitで追跡できるようにする。チャットでは結論、主な結果、固定URL、重大な停止、必要なHuman判断を伝える。受信側は対象SHAとEvidenceを照合する。
+- GitHubへの投稿後はCodexチャットまたは既存の認可済みCoordinator経路から起動する。Projectの保護規約・claim・Gateを適用する。公開記録には機密を含めず、GitHubを参照・更新できない場合は制約と許可済みのローカル記録の参照先を伝える。
